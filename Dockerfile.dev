@@ -1,0 +1,20 @@
+# Dockerfile.dev — local development ONLY.
+# Vercel builds with its own pipeline and does NOT use this file.
+# This container just runs the Next.js dev server and connects to hosted Supabase.
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install dependencies first (better layer caching). The actual node_modules
+# used at runtime lives in a named volume (see docker-compose.yml), so the host
+# never needs Node/npm and never has node_modules written to it.
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# Source is bind-mounted at runtime for hot reload; this COPY is a fallback
+# so the image is runnable on its own.
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
