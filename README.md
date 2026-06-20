@@ -108,7 +108,7 @@ Built incrementally; each phase keeps the app runnable.
 - [x] **Phase 4 — Auth UI + route protection.** Username/password, roles, pending-approval flow.
 - [x] **Phase 5 — Players tab.** Bottom tab bar, roster grouped + search, add/edit, profile (stats/streak/history).
 - [x] **Phase 6 — Play flow setup.** Start session (courts + mode), grouped player selection + walk-ins, persist session/enrollment.
-- [ ] Phase 7 — Rotation engine + tests
+- [x] **Phase 7 — Rotation engine + tests.** Pure `lib/rotation` module, both modes + edge cases, 19 Vitest tests passing.
 - [ ] Phase 8 — Live dashboard + Realtime
 - [ ] Phase 9 — Summary, Leaderboard, Settings/Admin
 - [ ] Phase 10 — PWA + Deploy
