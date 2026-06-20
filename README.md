@@ -109,7 +109,7 @@ Built incrementally; each phase keeps the app runnable.
 - [x] **Phase 5 — Players tab.** Bottom tab bar, roster grouped + search, add/edit, profile (stats/streak/history).
 - [x] **Phase 6 — Play flow setup.** Start session (courts + mode), grouped player selection + walk-ins, persist session/enrollment.
 - [x] **Phase 7 — Rotation engine + tests.** Pure `lib/rotation` module, both modes + edge cases, 19 Vitest tests passing.
-- [ ] Phase 8 — Live dashboard + Realtime
+- [x] **Phase 8 — Live dashboard + Realtime.** Courts/teams/persistent timer, winner select wired to the engine, late arrivals, Supabase Realtime sync.
 - [ ] Phase 9 — Summary, Leaderboard, Settings/Admin
 - [ ] Phase 10 — PWA + Deploy
 

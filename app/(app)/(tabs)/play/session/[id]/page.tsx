@@ -1,37 +1,88 @@
 import { notFound, redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
-import { Card, CategoryBadge, Button } from "@/components/ui";
-import { getSession, getSessionPlayers } from "@/lib/data/sessions";
+import { Card, CategoryBadge } from "@/components/ui";
+import { EndSessionButton } from "../../EndSessionButton";
+import { CourtCard, type CourtData } from "../CourtCard";
+import { RealtimeSync } from "../RealtimeSync";
+import { AutoInit } from "../AutoInit";
+import { AddToSessionDialog } from "../AddToSessionDialog";
+import { loadLiveSession } from "@/lib/data/liveSession";
+import { getPlayers } from "@/lib/data/players";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { canManageGameplay } from "@/lib/auth/roles";
-import { EndSessionButton } from "../../EndSessionButton";
+import type { Category } from "@/lib/categories";
 
 /**
- * Live session view — PLACEHOLDER.
- * Phase 7 adds the rotation engine; Phase 8 turns this into the real live
- * dashboard (courts, teams, timer, winner select) with Realtime sync.
- * For now it confirms enrollment: the session settings + enrolled roster.
+ * Live dashboard. Renders courts (teams + timer + winner select), the up-next
+ * group, and the numbered waiting list — all reconstructed from the DB so it
+ * stays in sync across devices via RealtimeSync. AutoInit fills the courts via
+ * the engine on first load.
  */
 export default async function LiveSessionPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const session = await getSession(params.id);
-  if (!session) notFound();
-  if (session.status === "ended") redirect(`/play/summary/${session.id}`);
+  const live = await loadLiveSession(params.id);
+  if (!live) notFound();
+  if (live.session.status === "ended") redirect(`/play/summary/${live.session.id}`);
 
-  const [sps, profile] = await Promise.all([
-    getSessionPlayers(session.id),
-    getCurrentProfile(),
-  ]);
+  const profile = await getCurrentProfile();
   const canManage = canManageGameplay(profile?.role);
 
+  const { session, sessionPlayers, games, gamePlayers } = live;
   const modeLabel =
     session.pairing_mode === "balance" ? "Balance" : "King of the court";
 
+  // Build court view models.
+  const playerById = new Map(sessionPlayers.map((sp) => [sp.player_id, sp.player]));
+  const courts: CourtData[] = games
+    .slice()
+    .sort((a, b) => a.court_number - b.court_number)
+    .map((g) => {
+      const team = (side: "a" | "b") =>
+        gamePlayers
+          .filter((gp) => gp.game_id === g.id && gp.team === side)
+          .map((gp) => {
+            const p = playerById.get(gp.player_id);
+            return {
+              id: gp.player_id,
+              name: p?.name ?? "—",
+              category: (p?.category ?? "beginner") as Category,
+            };
+          });
+      return {
+        court: g.court_number,
+        gameId: g.id,
+        startedAt: g.started_at,
+        teamA: { players: team("a") },
+        teamB: { players: team("b") },
+      };
+    });
+
+  // Waiting list ordered by queue position; up-next = front 4.
+  const waiting = sessionPlayers
+    .filter((sp) => sp.state === "waiting")
+    .sort((a, b) => (a.queue_position ?? 0) - (b.queue_position ?? 0));
+  const upNext = waiting.slice(0, 4);
+  const rest = waiting.slice(4);
+
+  const needsInit = games.length === 0 && waiting.length >= 4;
+
+  // Candidates for late arrival = roster players not currently active here.
+  const activeIds = new Set(
+    sessionPlayers.filter((sp) => sp.state !== "left").map((sp) => sp.player_id)
+  );
+  const roster = canManage ? await getPlayers() : [];
+  const candidates = roster
+    .filter((p) => !activeIds.has(p.id))
+    .map((p) => ({ id: p.id, name: p.name, category: p.category }));
+
   return (
     <div className="px-4">
+      <RealtimeSync sessionId={session.id} />
+      <AutoInit sessionId={session.id} needsInit={needsInit && canManage} />
+
       <PageHeader
         title={session.name}
         subtitle={`${session.court_count} court${
@@ -40,32 +91,93 @@ export default async function LiveSessionPage({
         action={canManage ? <EndSessionButton sessionId={session.id} /> : undefined}
       />
 
-      <Card className="mb-4 p-4 text-center" animateIn>
-        <p className="text-sm text-ink/60">
-          Session started with{" "}
-          <span className="font-semibold text-ink">{sps.length} players</span>.
-          The live dashboard (courts, teams, timer, winner select) is built in
-          the next phase.
-        </p>
-      </Card>
-
-      <h2 className="mb-2 px-1 font-heading text-sm font-semibold text-ink/70">
-        Enrolled players
-      </h2>
-      <ul className="flex flex-col gap-2 pb-2">
-        {sps
-          .slice()
-          .sort((a, b) => (a.queue_position ?? 0) - (b.queue_position ?? 0))
-          .map((sp) => (
-            <li
-              key={sp.id}
-              className="glass-inner flex items-center justify-between px-4 py-3"
-            >
-              <span className="font-medium text-ink">{sp.player.name}</span>
-              <CategoryBadge category={sp.player.category} size="sm" />
-            </li>
+      {/* Courts */}
+      {courts.length === 0 ? (
+        <Card className="p-8 text-center" animateIn>
+          <div className="mb-2 text-3xl" aria-hidden>
+            ⏳
+          </div>
+          <p className="text-sm text-ink/60">
+            {waiting.length < 4
+              ? "Waiting for at least 4 players to fill a court."
+              : "Setting up the courts…"}
+          </p>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {courts.map((c) => (
+            <CourtCard
+              key={c.court}
+              sessionId={session.id}
+              court={c}
+              canManage={canManage}
+            />
           ))}
-      </ul>
+        </div>
+      )}
+
+      {/* Up next */}
+      {upNext.length > 0 && (
+        <section className="mt-5">
+          <h2 className="mb-2 px-1 font-heading text-sm font-semibold text-ink/70">
+            Up next
+          </h2>
+          <Card className="border border-accent-to/40 bg-gradient-to-br from-accent-from/15 to-accent-to/15 p-3">
+            <ul className="flex flex-wrap gap-2">
+              {upNext.map((sp) => (
+                <li
+                  key={sp.id}
+                  className="flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5"
+                >
+                  <span className="text-sm font-semibold text-ink">
+                    {sp.player.name}
+                  </span>
+                  <CategoryBadge category={sp.player.category} size="sm" />
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
+      )}
+
+      {/* Waiting list */}
+      <section className="mt-5">
+        <div className="mb-2 flex items-center justify-between px-1">
+          <h2 className="font-heading text-sm font-semibold text-ink/70">
+            Waiting list
+          </h2>
+          {canManage && (
+            <AddToSessionDialog sessionId={session.id} candidates={candidates} />
+          )}
+        </div>
+        {waiting.length === 0 ? (
+          <p className="px-1 py-4 text-center text-sm text-ink/50">
+            No one waiting.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2 pb-2">
+            {rest.length === 0 && upNext.length > 0 && (
+              <p className="px-1 text-xs text-ink/45">
+                Everyone waiting is up next.
+              </p>
+            )}
+            {rest.map((sp, i) => (
+              <li
+                key={sp.id}
+                className="glass-inner flex items-center justify-between px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="font-heading text-xs font-bold text-ink/40">
+                    {i + 5}
+                  </span>
+                  <span className="font-medium text-ink">{sp.player.name}</span>
+                </div>
+                <CategoryBadge category={sp.player.category} size="sm" />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
