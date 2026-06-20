@@ -52,9 +52,21 @@ Docker runs the Next.js dev server **locally**. It is **not** used by Vercel (Ve
    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
    ```
 
-3. **Apply the schema.** SQL migrations live under [`supabase/migrations/`](supabase/migrations/) and are the reproducible source of truth. Apply them via the Supabase **SQL Editor** (paste each migration in filename order and run), or with the Supabase CLI (`supabase db push`).
+3. **Apply the schema.** SQL migrations live under [`supabase/migrations/`](supabase/migrations/) and are the reproducible source of truth. In the Supabase dashboard, open **SQL Editor → New query**, then paste and **Run each file in filename order**:
 
-_(The schema, auth tables, and Row Level Security policies are added in a later build phase.)_
+   1. `0001_core_schema.sql` — enums + tables (players, sessions, session_players, games, game_players)
+   2. `0002_player_stats_view.sql` — lifetime stats view
+   3. `0003_auth_profiles.sql` — profiles table, roles, first-user-becomes-Admin trigger
+   4. `0004_rls_policies.sql` — Row Level Security policies
+   5. `0005_realtime.sql` — publish live-state tables for Realtime
+
+   Each should report success before you run the next.
+
+4. **Enable username/password sign-up.** In **Authentication → Providers → Email**, make sure **Email** is enabled and turn **Confirm email = OFF** (we use synthetic `<username>@pickleit.local` addresses that can't receive mail). This lets accounts activate immediately without an email round-trip.
+
+### Roles & first user
+
+The **first account created becomes Admin** automatically; everyone after is **pending** until the Admin assigns a role in-app (Settings → Users). See [Auth model](#auth-model-planned).
 
 ---
 
@@ -85,8 +97,8 @@ _(The schema, auth tables, and Row Level Security policies are added in a later 
 Built incrementally; each phase keeps the app runnable.
 
 - [x] **Phase 1 — Scaffold + Docker.** `docker compose up` serves a styled placeholder.
-- [ ] Phase 2 — Design-system primitives
-- [ ] Phase 3 — Supabase schema + Auth + RLS
+- [x] **Phase 2 — Design-system primitives.** Glass components + `/style` reference page.
+- [x] **Phase 3 — Supabase schema + Auth + RLS.** Migrations, role-based RLS, browser/server clients.
 - [ ] Phase 4 — Auth UI + route protection
 - [ ] Phase 5 — Players tab
 - [ ] Phase 6 — Play flow setup
