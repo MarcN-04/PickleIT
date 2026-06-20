@@ -62,7 +62,13 @@ Docker runs the Next.js dev server **locally**. It is **not** used by Vercel (Ve
 
    Each should report success before you run the next.
 
-4. **Enable username/password sign-up.** In **Authentication → Providers → Email**, make sure **Email** is enabled and turn **Confirm email = OFF** (we use synthetic `<username>@pickleit.local` addresses that can't receive mail). This lets accounts activate immediately without an email round-trip.
+4. **Enable username/password sign-up.** In **Authentication → Providers → Email**:
+   - Make sure **Email** is **enabled** and **Allow new users to sign up** is **ON**.
+   - Turn **Confirm email = OFF**. **This is required** — we use synthetic
+     `<username>@pickleit.local` addresses that can't receive mail. With
+     confirmation ON, Supabase rejects the synthetic domain
+     (`email_address_invalid`) and/or throttles sign-ups
+     (`over_email_send_rate_limit`). With it OFF, accounts activate instantly.
 
 ### Roles & first user
 
@@ -99,8 +105,8 @@ Built incrementally; each phase keeps the app runnable.
 - [x] **Phase 1 — Scaffold + Docker.** `docker compose up` serves a styled placeholder.
 - [x] **Phase 2 — Design-system primitives.** Glass components + `/style` reference page.
 - [x] **Phase 3 — Supabase schema + Auth + RLS.** Migrations, role-based RLS, browser/server clients.
-- [ ] Phase 4 — Auth UI + route protection
-- [ ] Phase 5 — Players tab
+- [x] **Phase 4 — Auth UI + route protection.** Username/password, roles, pending-approval flow.
+- [x] **Phase 5 — Players tab.** Bottom tab bar, roster grouped + search, add/edit, profile (stats/streak/history).
 - [ ] Phase 6 — Play flow setup
 - [ ] Phase 7 — Rotation engine + tests
 - [ ] Phase 8 — Live dashboard + Realtime
