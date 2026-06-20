@@ -107,7 +107,7 @@ Built incrementally; each phase keeps the app runnable.
 - [x] **Phase 3 — Supabase schema + Auth + RLS.** Migrations, role-based RLS, browser/server clients.
 - [x] **Phase 4 — Auth UI + route protection.** Username/password, roles, pending-approval flow.
 - [x] **Phase 5 — Players tab.** Bottom tab bar, roster grouped + search, add/edit, profile (stats/streak/history).
-- [ ] Phase 6 — Play flow setup
+- [x] **Phase 6 — Play flow setup.** Start session (courts + mode), grouped player selection + walk-ins, persist session/enrollment.
 - [ ] Phase 7 — Rotation engine + tests
 - [ ] Phase 8 — Live dashboard + Realtime
 - [ ] Phase 9 — Summary, Leaderboard, Settings/Admin
