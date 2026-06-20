@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, Button, CategoryBadge } from "@/components/ui";
+import { FlameIcon } from "@/components/icons";
 import {
   getPlayer,
   getPlayerStats,
@@ -33,7 +34,7 @@ export default async function PlayerProfilePage({
   const canEdit = canManageGameplay(profile?.role);
 
   return (
-    <div className="px-4">
+    <div>
       <PageHeader
         title={player.name}
         action={
@@ -72,7 +73,7 @@ export default async function PlayerProfilePage({
 
       {streak > 0 && (
         <Card className="mb-4 flex items-center justify-center gap-2 bg-gradient-to-r from-accent-from/30 to-accent-to/30 p-3">
-          <span aria-hidden>🔥</span>
+          <FlameIcon size={18} className="text-cat-intermediateInk" />
           <span className="text-sm font-semibold text-ink">
             {streak}-game win streak
           </span>

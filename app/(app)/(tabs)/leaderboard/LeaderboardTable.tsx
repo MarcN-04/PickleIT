@@ -83,7 +83,7 @@ export function LeaderboardTable({ stats }: { stats: PlayerStats[] }) {
           variants={staggerContainer}
           initial="hidden"
           animate="visible"
-          className="flex flex-col gap-2 pb-2"
+          className="grid gap-2 pb-2 sm:grid-cols-2"
         >
           {rows.map((s, i) => (
             <motion.li key={s.player_id} variants={popIn}>

@@ -41,6 +41,7 @@ export function RosterList({ players, statsById }: Props) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         aria-label="Search players"
+        className="lg:max-w-sm"
       />
 
       {players.length === 0 && (
@@ -63,7 +64,7 @@ export function RosterList({ players, statsById }: Props) {
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="flex flex-col gap-2"
+              className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
             >
               {group.map((p) => {
                 const s = statsById[p.id];

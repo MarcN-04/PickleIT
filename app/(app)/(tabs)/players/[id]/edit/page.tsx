@@ -23,7 +23,7 @@ export default async function EditPlayerPage({
   const action = updatePlayer.bind(null, player.id);
 
   return (
-    <div className="px-4">
+    <div className="mx-auto max-w-xl">
       <PageHeader
         title="Edit player"
         action={

@@ -21,7 +21,7 @@ export default async function PlayersPage() {
   const canEdit = canManageGameplay(profile?.role);
 
   return (
-    <div className="px-4">
+    <div>
       <PageHeader
         title="Players"
         subtitle={`${players.length} in the roster`}

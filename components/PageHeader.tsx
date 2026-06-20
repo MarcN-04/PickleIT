@@ -1,6 +1,6 @@
 /**
  * Standard tab/page header: a heading with optional subtitle and a right-aligned
- * action slot (e.g. an Add button or sign-out).
+ * action slot (e.g. an Add button or sign-out). Heading scales up on desktop.
  */
 export function PageHeader({
   title,
@@ -14,7 +14,7 @@ export function PageHeader({
   return (
     <header className="flex items-start justify-between gap-3 px-1 pb-4 pt-2">
       <div>
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink lg:text-3xl">
           {title}
         </h1>
         {subtitle && <p className="mt-0.5 text-sm text-ink/55">{subtitle}</p>}

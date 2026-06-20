@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, Button, CategoryBadge } from "@/components/ui";
 import { GameTimer } from "@/components/GameTimer";
+import { ClockIcon } from "@/components/icons";
 import { recordWinner } from "@/lib/data/liveSessionActions";
 import type { Category } from "@/lib/categories";
 import type { TeamSide } from "@/types/database";
@@ -52,7 +53,10 @@ export function CourtCard({
         <h3 className="font-heading text-sm font-bold text-ink">
           Court {court.court}
         </h3>
-        <GameTimer startedAt={court.startedAt} />
+        <span className="flex items-center gap-1 text-ink/70">
+          <ClockIcon size={15} />
+          <GameTimer startedAt={court.startedAt} />
+        </span>
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">

@@ -82,7 +82,7 @@ export function StartSessionFlow({
   }
 
   return (
-    <div className="px-4">
+    <div>
       <PageHeader
         title="Start a session"
         subtitle={step === 1 ? "Courts & pairing" : "Who's here today?"}
@@ -96,8 +96,9 @@ export function StartSessionFlow({
             initial="hidden"
             animate="visible"
             exit={{ opacity: 0, y: -8 }}
-            className="flex flex-col gap-4"
+            className="mx-auto flex max-w-3xl flex-col gap-4"
           >
+            <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
             <Card className="p-5">
               <h2 className="mb-3 font-heading text-sm font-semibold text-ink/70">
                 Active courts
@@ -141,6 +142,7 @@ export function StartSessionFlow({
                 ))}
               </div>
             </Card>
+            </div>
 
             <Button fullWidth onClick={() => setStep(2)}>
               Next · select players
@@ -182,7 +184,7 @@ export function StartSessionFlow({
                       {selectedInGroup} of {group.length}
                     </span>
                   </div>
-                  <div className="flex flex-col gap-2">
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {group.map((p) => {
                       const isSel = selected.has(p.id);
                       return (
@@ -227,7 +229,7 @@ export function StartSessionFlow({
               </p>
             )}
 
-            <div className="sticky bottom-24 z-10 flex gap-2">
+            <div className="sticky bottom-24 z-10 flex gap-2 lg:bottom-4">
               <Button
                 variant="glass"
                 onClick={() => setStep(1)}

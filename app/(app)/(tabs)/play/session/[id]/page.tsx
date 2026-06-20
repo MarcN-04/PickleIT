@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CategoryBadge } from "@/components/ui";
+import { HourglassIcon } from "@/components/icons";
 import { EndSessionButton } from "../../EndSessionButton";
 import { CourtCard, type CourtData } from "../CourtCard";
 import { RealtimeSync } from "../RealtimeSync";
@@ -79,7 +80,7 @@ export default async function LiveSessionPage({
     .map((p) => ({ id: p.id, name: p.name, category: p.category }));
 
   return (
-    <div className="px-4">
+    <div>
       <RealtimeSync sessionId={session.id} />
       <AutoInit sessionId={session.id} needsInit={needsInit && canManage} />
 
@@ -91,12 +92,12 @@ export default async function LiveSessionPage({
         action={canManage ? <EndSessionButton sessionId={session.id} /> : undefined}
       />
 
+      <div className="lg:grid lg:grid-cols-[1fr_20rem] lg:items-start lg:gap-6">
       {/* Courts */}
+      <div className="lg:min-w-0">
       {courts.length === 0 ? (
-        <Card className="p-8 text-center" animateIn>
-          <div className="mb-2 text-3xl" aria-hidden>
-            ⏳
-          </div>
+        <Card className="flex flex-col items-center p-8 text-center" animateIn>
+          <HourglassIcon size={32} className="mb-2 text-ink/40" />
           <p className="text-sm text-ink/60">
             {waiting.length < 4
               ? "Waiting for at least 4 players to fill a court."
@@ -104,7 +105,7 @@ export default async function LiveSessionPage({
           </p>
         </Card>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           {courts.map((c) => (
             <CourtCard
               key={c.court}
@@ -115,10 +116,13 @@ export default async function LiveSessionPage({
           ))}
         </div>
       )}
+      </div>
 
+      {/* Queue column (Up next + Waiting list) */}
+      <div className="lg:sticky lg:top-4">
       {/* Up next */}
       {upNext.length > 0 && (
-        <section className="mt-5">
+        <section className="mt-5 lg:mt-0">
           <h2 className="mb-2 px-1 font-heading text-sm font-semibold text-ink/70">
             Up next
           </h2>
@@ -178,6 +182,8 @@ export default async function LiveSessionPage({
           </ul>
         )}
       </section>
+      </div>
+      </div>
     </div>
   );
 }

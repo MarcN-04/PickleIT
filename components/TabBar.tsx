@@ -4,37 +4,30 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/cn";
-
-type Tab = { href: string; label: string; icon: string };
-
-const TABS: Tab[] = [
-  { href: "/play", label: "Play", icon: "🎾" },
-  { href: "/players", label: "Players", icon: "👥" },
-  { href: "/leaderboard", label: "Ranks", icon: "🏆" },
-  { href: "/settings", label: "Settings", icon: "⚙️" },
-];
+import { NAV_ITEMS } from "./nav-items";
 
 /**
- * Mobile bottom tab bar — the app's primary navigation.
- * Fixed to the bottom on a frosted glass surface; the active tab pops with the
- * emerald primary and a sliding glow indicator.
+ * Mobile/tablet bottom tab bar (<1024px) — the app's primary navigation on
+ * small screens. Hidden on lg, where the SideNav takes over. Fixed to the
+ * bottom on a frosted glass surface; the active tab pops with the emerald
+ * primary and a sliding glow indicator.
  */
 export function TabBar() {
   const pathname = usePathname();
 
   return (
     <nav
-      className="glass fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-md items-stretch justify-around rounded-b-none rounded-t-glass-lg px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2"
+      className="glass fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-md items-stretch justify-around rounded-b-none rounded-t-glass-lg px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 lg:hidden"
       aria-label="Primary"
     >
-      {TABS.map((tab) => {
-        const active =
-          pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+      {NAV_ITEMS.map(({ href, label, Icon }) => {
+        const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
-            key={tab.href}
-            href={tab.href}
-            className="relative flex flex-1 flex-col items-center gap-0.5 rounded-full px-2 py-1.5"
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className="relative flex flex-1 flex-col items-center gap-0.5 rounded-full px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {active && (
               <motion.span
@@ -43,16 +36,14 @@ export function TabBar() {
                 transition={{ type: "spring", stiffness: 500, damping: 34 }}
               />
             )}
-            <span className="text-lg leading-none" aria-hidden>
-              {tab.icon}
-            </span>
+            <Icon size={22} className={active ? "text-primary" : "text-ink/55"} />
             <span
               className={cn(
                 "text-[11px] font-medium",
                 active ? "text-primary" : "text-ink/55"
               )}
             >
-              {tab.label}
+              {label}
             </span>
           </Link>
         );

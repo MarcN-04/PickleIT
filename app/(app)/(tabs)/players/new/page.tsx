@@ -12,7 +12,7 @@ export default async function NewPlayerPage() {
   if (!canManageGameplay(profile?.role)) redirect("/players");
 
   return (
-    <div className="px-4">
+    <div className="mx-auto max-w-xl">
       <PageHeader
         title="Add player"
         action={

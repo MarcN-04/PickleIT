@@ -20,7 +20,7 @@ export default async function SummaryPage({
   const summary = await getSessionSummary(session.id);
 
   return (
-    <div className="px-4">
+    <div>
       <PageHeader
         title="Session summary"
         subtitle={session.name}
@@ -80,7 +80,7 @@ export default async function SummaryPage({
           No games were completed in this session.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2 pb-2">
+        <ul className="grid gap-2 pb-2 sm:grid-cols-2">
           {summary.games.map((g, i) => (
             <li key={g.gameId}>
               <Card className="p-3">

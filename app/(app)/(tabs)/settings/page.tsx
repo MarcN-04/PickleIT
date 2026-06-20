@@ -19,7 +19,7 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <div className="flex flex-col gap-4 px-4">
+    <div className="flex flex-col gap-4">
       <PageHeader title="Settings" />
 
       {/* Account */}
@@ -31,33 +31,35 @@ export default async function SettingsPage() {
         <SignOutButton variant="glass" />
       </Card>
 
-      {/* Admin: defaults + user management */}
+      {/* Admin: defaults + user management, side by side on desktop */}
       {admin && (
-        <>
+        <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
           <SettingsForm settings={settings} />
           <UserManagement profiles={profiles} currentUserId={profile.id} />
-        </>
+        </div>
       )}
 
-      {/* Data & backup */}
-      <Card className="p-5">
-        <h2 className="mb-1 font-heading text-sm font-bold text-ink">
-          Data &amp; backup
-        </h2>
-        <p className="text-xs text-ink/60">
-          All data lives in your Supabase project. To back up or export, use the
-          Supabase dashboard → Table editor → Export, or the SQL editor. Player
-          stats and history persist across sessions automatically.
-        </p>
-      </Card>
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+        {/* Data & backup */}
+        <Card className="p-5">
+          <h2 className="mb-1 font-heading text-sm font-bold text-ink">
+            Data &amp; backup
+          </h2>
+          <p className="text-xs text-ink/60">
+            All data lives in your Supabase project. To back up or export, use the
+            Supabase dashboard → Table editor → Export, or the SQL editor. Player
+            stats and history persist across sessions automatically.
+          </p>
+        </Card>
 
-      {/* About */}
-      <Card className="p-5">
-        <h2 className="mb-1 font-heading text-sm font-bold text-ink">About</h2>
-        <p className="text-xs text-ink/60">
-          PickleIT · v0.1.0 — automated, fair pickleball rotation.
-        </p>
-      </Card>
+        {/* About */}
+        <Card className="p-5">
+          <h2 className="mb-1 font-heading text-sm font-bold text-ink">About</h2>
+          <p className="text-xs text-ink/60">
+            PickleIT · v0.1.0 — automated, fair pickleball rotation.
+          </p>
+        </Card>
+      </div>
     </div>
   );
 }

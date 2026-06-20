@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui";
+import { HourglassIcon } from "@/components/icons";
 import { SignOutButton } from "@/components/SignOutButton";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { isPending } from "@/lib/auth/roles";
@@ -16,8 +17,8 @@ export default async function PendingPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-5 py-12">
       <Card className="w-full p-7 text-center" animateIn>
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/70 text-2xl shadow-glass">
-          <span aria-hidden>⏳</span>
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white/70 text-ink/60 shadow-glass">
+          <HourglassIcon size={26} />
         </div>
         <h1 className="font-heading text-xl font-bold text-ink">
           Waiting for approval
