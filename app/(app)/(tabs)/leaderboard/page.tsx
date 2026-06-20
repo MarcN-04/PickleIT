@@ -1,17 +1,13 @@
 import { PageHeader } from "@/components/PageHeader";
-import { Card } from "@/components/ui";
+import { LeaderboardTable } from "./LeaderboardTable";
+import { getAllPlayerStats } from "@/lib/data/players";
 
-/** Placeholder — the full leaderboard is built in Phase 9. */
-export default function LeaderboardPage() {
+export default async function LeaderboardPage() {
+  const stats = await getAllPlayerStats();
   return (
     <div className="px-4">
-      <PageHeader title="Leaderboard" subtitle="Rankings" />
-      <Card className="p-8 text-center" animateIn>
-        <div className="mb-2 text-3xl" aria-hidden>
-          🏆
-        </div>
-        <p className="text-sm text-ink/60">Rankings arrive in a later phase.</p>
-      </Card>
+      <PageHeader title="Leaderboard" subtitle="Lifetime rankings" />
+      <LeaderboardTable stats={stats} />
     </div>
   );
 }

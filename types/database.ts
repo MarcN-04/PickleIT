@@ -66,6 +66,16 @@ export interface Profile {
   created_at: string;
 }
 
+export interface AppSettings {
+  id: number;
+  default_pairing_mode: PairingMode;
+  default_court_count: number;
+  label_beginner: string;
+  label_intermediate: string;
+  label_pro: string;
+  updated_at: string;
+}
+
 /** Row shape of the player_stats view. */
 export interface PlayerStats {
   player_id: string;

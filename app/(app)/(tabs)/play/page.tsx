@@ -4,6 +4,7 @@ import { Card } from "@/components/ui";
 import { StartSessionFlow } from "./StartSessionFlow";
 import { getPlayers } from "@/lib/data/players";
 import { getActiveSession } from "@/lib/data/sessions";
+import { getAppSettings } from "@/lib/data/settings";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { canManageGameplay } from "@/lib/auth/roles";
 
@@ -12,8 +13,7 @@ import { canManageGameplay } from "@/lib/auth/roles";
  * - If a session is active -> jump straight to the live session.
  * - Else, organizers/admins see the start-session flow; viewers see a notice.
  *
- * Default court count / pairing mode currently fall back to constants; they
- * become real Settings values in Phase 9.
+ * Default court count / pairing mode come from app settings (admin-configurable).
  */
 export default async function PlayPage() {
   const active = await getActiveSession();
@@ -37,13 +37,16 @@ export default async function PlayPage() {
     );
   }
 
-  const players = await getPlayers();
+  const [players, settings] = await Promise.all([
+    getPlayers(),
+    getAppSettings(),
+  ]);
 
   return (
     <StartSessionFlow
       players={players}
-      defaultCourtCount={2}
-      defaultPairingMode="balance"
+      defaultCourtCount={settings.default_court_count}
+      defaultPairingMode={settings.default_pairing_mode}
     />
   );
 }

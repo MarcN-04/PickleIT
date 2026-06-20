@@ -59,6 +59,7 @@ Docker runs the Next.js dev server **locally**. It is **not** used by Vercel (Ve
    3. `0003_auth_profiles.sql` — profiles table, roles, first-user-becomes-Admin trigger
    4. `0004_rls_policies.sql` — Row Level Security policies
    5. `0005_realtime.sql` — publish live-state tables for Realtime
+   6. `0006_app_settings.sql` — app-wide defaults (pairing mode, court count, labels)
 
    Each should report success before you run the next.
 
@@ -110,7 +111,7 @@ Built incrementally; each phase keeps the app runnable.
 - [x] **Phase 6 — Play flow setup.** Start session (courts + mode), grouped player selection + walk-ins, persist session/enrollment.
 - [x] **Phase 7 — Rotation engine + tests.** Pure `lib/rotation` module, both modes + edge cases, 19 Vitest tests passing.
 - [x] **Phase 8 — Live dashboard + Realtime.** Courts/teams/persistent timer, winner select wired to the engine, late arrivals, Supabase Realtime sync.
-- [ ] Phase 9 — Summary, Leaderboard, Settings/Admin
+- [x] **Phase 9 — Summary, Leaderboard, Settings/Admin.** Session recap, sortable/filterable leaderboard, admin defaults + user/role management.
 - [ ] Phase 10 — PWA + Deploy
 
 ---
