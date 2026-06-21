@@ -97,8 +97,8 @@ export default async function LiveSessionPage({
       <div className="lg:min-w-0">
       {courts.length === 0 ? (
         <Card className="flex flex-col items-center p-8 text-center" animateIn>
-          <HourglassIcon size={32} className="mb-2 text-ink/40" />
-          <p className="text-sm text-ink/60">
+          <HourglassIcon size={32} className="mb-2 text-ink/65" />
+          <p className="text-sm text-ink/70">
             {waiting.length < 4
               ? "Waiting for at least 4 players to fill a court."
               : "Setting up the courts…"}
@@ -155,13 +155,13 @@ export default async function LiveSessionPage({
           )}
         </div>
         {waiting.length === 0 ? (
-          <p className="px-1 py-4 text-center text-sm text-ink/50">
+          <p className="px-1 py-4 text-center text-sm text-ink/70">
             No one waiting.
           </p>
         ) : (
           <ul className="flex flex-col gap-2 pb-2">
             {rest.length === 0 && upNext.length > 0 && (
-              <p className="px-1 text-xs text-ink/45">
+              <p className="px-1 text-xs text-ink/65">
                 Everyone waiting is up next.
               </p>
             )}
@@ -171,7 +171,7 @@ export default async function LiveSessionPage({
                 className="glass-inner flex items-center justify-between px-4 py-3"
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-heading text-xs font-bold text-ink/40">
+                  <span className="font-heading text-xs font-bold text-ink/65">
                     {i + 5}
                   </span>
                   <span className="font-medium text-ink">{sp.player.name}</span>

@@ -67,7 +67,7 @@ export function CourtCard({
           disabled={isPending}
         />
         <div className="flex items-center justify-center">
-          <span className="font-heading text-xs font-bold text-ink/40">VS</span>
+          <span className="font-heading text-xs font-bold text-ink/65">VS</span>
         </div>
         <TeamPanel
           team={court.teamB}
@@ -95,7 +95,7 @@ export function CourtCard({
                 exit={{ opacity: 0 }}
                 className="flex items-center justify-between gap-2"
               >
-                <span className="text-xs text-ink/55">Tap the winning team</span>
+                <span className="text-xs text-ink/70">Tap the winning team</span>
                 <Button
                   variant="ghost"
                   size="sm"

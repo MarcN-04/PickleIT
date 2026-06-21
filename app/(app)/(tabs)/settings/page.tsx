@@ -22,30 +22,35 @@ export default async function SettingsPage() {
     <div className="flex flex-col gap-4">
       <PageHeader title="Settings" />
 
-      {/* Account */}
-      <Card className="flex items-center justify-between p-5" animateIn>
-        <div>
-          <p className="font-medium text-ink">{profile.username}</p>
-          <p className="text-sm text-ink/55">{ROLE_LABEL[profile.role]}</p>
-        </div>
-        <SignOutButton variant="glass" />
-      </Card>
+      {/*
+        Admin sees wide 2-col panels (defaults + users); a non-admin only has the
+        account/info cards, so we cap those to a single readable column instead
+        of stretching three sparse cards across the whole width.
+      */}
+      <div className={admin ? "flex flex-col gap-4" : "flex max-w-2xl flex-col gap-4"}>
+        {/* Account */}
+        <Card className="flex items-center justify-between p-5" animateIn>
+          <div>
+            <p className="text-base font-semibold text-ink">{profile.username}</p>
+            <p className="text-sm text-ink/70">{ROLE_LABEL[profile.role]}</p>
+          </div>
+          <SignOutButton variant="glass" />
+        </Card>
 
-      {/* Admin: defaults + user management, side by side on desktop */}
-      {admin && (
-        <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-          <SettingsForm settings={settings} />
-          <UserManagement profiles={profiles} currentUserId={profile.id} />
-        </div>
-      )}
+        {/* Admin: defaults + user management, side by side on desktop */}
+        {admin && (
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+            <SettingsForm settings={settings} />
+            <UserManagement profiles={profiles} currentUserId={profile.id} />
+          </div>
+        )}
 
-      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
         {/* Data & backup */}
         <Card className="p-5">
-          <h2 className="mb-1 font-heading text-sm font-bold text-ink">
+          <h2 className="mb-1.5 font-heading text-base font-bold text-ink">
             Data &amp; backup
           </h2>
-          <p className="text-xs text-ink/60">
+          <p className="text-sm leading-relaxed text-ink/70">
             All data lives in your Supabase project. To back up or export, use the
             Supabase dashboard → Table editor → Export, or the SQL editor. Player
             stats and history persist across sessions automatically.
@@ -54,8 +59,10 @@ export default async function SettingsPage() {
 
         {/* About */}
         <Card className="p-5">
-          <h2 className="mb-1 font-heading text-sm font-bold text-ink">About</h2>
-          <p className="text-xs text-ink/60">
+          <h2 className="mb-1.5 font-heading text-base font-bold text-ink">
+            About
+          </h2>
+          <p className="text-sm text-ink/70">
             PickleIT · v0.1.0 — automated, fair pickleball rotation.
           </p>
         </Card>

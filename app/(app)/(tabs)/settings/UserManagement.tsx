@@ -39,7 +39,7 @@ export function UserManagement({
   return (
     <Card className="p-5" animateIn>
       <h2 className="mb-1 font-heading text-sm font-bold text-ink">Users</h2>
-      <p className="mb-3 text-xs text-ink/55">
+      <p className="mb-3 text-xs text-ink/70">
         Approve new sign-ups and set roles. Pending users can&apos;t access the
         app until assigned a role.
       </p>
@@ -61,7 +61,7 @@ export function UserManagement({
               <div className="flex items-center gap-2">
                 <span className="font-medium text-ink">{p.username}</span>
                 {isSelf && (
-                  <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] text-ink/50">
+                  <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] text-ink/70">
                     you
                   </span>
                 )}

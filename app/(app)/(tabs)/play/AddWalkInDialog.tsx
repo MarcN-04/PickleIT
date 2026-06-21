@@ -12,7 +12,20 @@ import { createPlayer } from "@/lib/data/playerActions";
  * the roster (so they persist for future sessions) and reports the new id so
  * the caller can auto-select them into today's session.
  */
-export function AddWalkInDialog({ onAdded }: { onAdded: (id: string) => void }) {
+type AddWalkInDialogProps = {
+  onAdded: (id: string) => void;
+  /** Override the default compact trigger (e.g. a full-width panel button). */
+  triggerClassName?: string;
+  triggerFullWidth?: boolean;
+  triggerLabel?: string;
+};
+
+export function AddWalkInDialog({
+  onAdded,
+  triggerClassName,
+  triggerFullWidth = false,
+  triggerLabel = "+ Walk-in",
+}: AddWalkInDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -53,8 +66,14 @@ export function AddWalkInDialog({ onAdded }: { onAdded: (id: string) => void }) 
 
   return (
     <>
-      <Button variant="glass" size="sm" onClick={() => setOpen(true)}>
-        + Walk-in
+      <Button
+        variant="glass"
+        size={triggerFullWidth ? "md" : "sm"}
+        fullWidth={triggerFullWidth}
+        className={triggerClassName}
+        onClick={() => setOpen(true)}
+      >
+        {triggerLabel}
       </Button>
 
       <AnimatePresence>

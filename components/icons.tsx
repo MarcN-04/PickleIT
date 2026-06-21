@@ -121,6 +121,29 @@ export function PlusIcon(props: IconProps) {
   );
 }
 
+/** Scale — balance / fair rotation pairing mode. */
+export function ScaleIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M12 3v18" />
+      <path d="M7 21h10" />
+      <path d="M5 7h14" />
+      <path d="M5 7 2.5 13a3 3 0 0 0 5 0L5 7Z" />
+      <path d="M19 7l-2.5 6a3 3 0 0 0 5 0L19 7Z" />
+    </Base>
+  );
+}
+
+/** Crown — king of the court pairing mode. */
+export function CrownIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M3 8l3.5 3L12 5l5.5 6L21 8l-1.5 10h-15L3 8Z" />
+      <path d="M4.5 18h15" />
+    </Base>
+  );
+}
+
 /** Pickle/logo glyph — used in the brand mark. */
 export function PickleIcon(props: IconProps) {
   return (

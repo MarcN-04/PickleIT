@@ -1,19 +1,22 @@
 "use client";
 
+import { useTransition } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/cn";
 import { NAV_ITEMS } from "./nav-items";
 
 /**
- * Mobile/tablet bottom tab bar (<1024px) — the app's primary navigation on
- * small screens. Hidden on lg, where the SideNav takes over. Fixed to the
- * bottom on a frosted glass surface; the active tab pops with the emerald
- * primary and a sliding glow indicator.
+ * Mobile/tablet bottom tab bar (<1024px) — primary navigation on small screens,
+ * hidden on lg where the SideNav takes over. Frosted glass, fixed to the bottom;
+ * the active tab pops with the emerald primary and a sliding indicator. Clicks
+ * highlight immediately (optimistic) so the tap feels instant.
  */
 export function TabBar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
 
   return (
     <nav
@@ -26,7 +29,12 @@ export function TabBar() {
           <Link
             key={href}
             href={href}
+            prefetch
             aria-current={active ? "page" : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              startTransition(() => router.push(href));
+            }}
             className="relative flex flex-1 flex-col items-center gap-0.5 rounded-full px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             {active && (
@@ -36,11 +44,11 @@ export function TabBar() {
                 transition={{ type: "spring", stiffness: 500, damping: 34 }}
               />
             )}
-            <Icon size={22} className={active ? "text-primary" : "text-ink/55"} />
+            <Icon size={22} className={active ? "text-primary" : "text-ink/65"} />
             <span
               className={cn(
                 "text-[11px] font-medium",
-                active ? "text-primary" : "text-ink/55"
+                active ? "text-primary" : "text-ink/65"
               )}
             >
               {label}

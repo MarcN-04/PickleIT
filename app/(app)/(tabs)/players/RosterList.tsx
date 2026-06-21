@@ -45,7 +45,7 @@ export function RosterList({ players, statsById }: Props) {
       />
 
       {players.length === 0 && (
-        <p className="px-1 py-8 text-center text-sm text-ink/50">
+        <p className="px-1 py-8 text-center text-sm text-ink/70">
           No players yet. Add your first player to get started.
         </p>
       )}
@@ -57,14 +57,14 @@ export function RosterList({ players, statsById }: Props) {
               <h2 className="font-heading text-sm font-semibold text-ink/70">
                 {CATEGORY_META[cat].label}
               </h2>
-              <span className="text-xs text-ink/45">{group.length}</span>
+              <span className="text-xs text-ink/65">{group.length}</span>
             </div>
 
             <motion.ul
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
+              className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
               {group.map((p) => {
                 const s = statsById[p.id];
@@ -78,7 +78,7 @@ export function RosterList({ players, statsById }: Props) {
                         <span className="font-medium text-ink">{p.name}</span>
                         <CategoryBadge category={p.category} size="sm" />
                       </div>
-                      <span className="text-xs text-ink/50">
+                      <span className="text-xs text-ink/70">
                         {s && s.games > 0
                           ? `${s.wins}W · ${s.losses}L`
                           : "No games"}
@@ -93,7 +93,7 @@ export function RosterList({ players, statsById }: Props) {
       )}
 
       {query && filtered.length === 0 && players.length > 0 && (
-        <p className="px-1 py-6 text-center text-sm text-ink/50">
+        <p className="px-1 py-6 text-center text-sm text-ink/70">
           No players match “{query}”.
         </p>
       )}

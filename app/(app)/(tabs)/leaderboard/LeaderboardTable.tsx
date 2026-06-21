@@ -45,7 +45,7 @@ export function LeaderboardTable({ stats }: { stats: PlayerStats[] }) {
     <div className="flex flex-col gap-4">
       {/* Sort */}
       <div>
-        <p className="mb-2 px-1 text-xs font-medium text-ink/55">Sort by</p>
+        <p className="mb-2 px-1 text-xs font-medium text-ink/70">Sort by</p>
         <div className="flex gap-2">
           {(Object.keys(SORT_LABEL) as SortKey[]).map((k) => (
             <Chip key={k} selected={sort === k} onClick={() => setSort(k)}>
@@ -57,7 +57,7 @@ export function LeaderboardTable({ stats }: { stats: PlayerStats[] }) {
 
       {/* Filter */}
       <div>
-        <p className="mb-2 px-1 text-xs font-medium text-ink/55">Category</p>
+        <p className="mb-2 px-1 text-xs font-medium text-ink/70">Category</p>
         <div className="flex flex-wrap gap-2">
           <Chip selected={filter === "all"} onClick={() => setFilter("all")}>
             All
@@ -75,7 +75,7 @@ export function LeaderboardTable({ stats }: { stats: PlayerStats[] }) {
       </div>
 
       {rows.length === 0 ? (
-        <p className="px-1 py-8 text-center text-sm text-ink/50">
+        <p className="px-1 py-8 text-center text-sm text-ink/70">
           No players to rank yet.
         </p>
       ) : (
@@ -83,7 +83,7 @@ export function LeaderboardTable({ stats }: { stats: PlayerStats[] }) {
           variants={staggerContainer}
           initial="hidden"
           animate="visible"
-          className="grid gap-2 pb-2 sm:grid-cols-2"
+          className="grid gap-2 pb-2 sm:grid-cols-2 xl:grid-cols-3"
         >
           {rows.map((s, i) => (
             <motion.li key={s.player_id} variants={popIn}>
@@ -96,7 +96,7 @@ export function LeaderboardTable({ stats }: { stats: PlayerStats[] }) {
                     className={`flex h-7 w-7 items-center justify-center rounded-full font-heading text-xs font-bold ${
                       i === 0 && s.games > 0
                         ? "bg-gradient-to-br from-accent-from to-accent-to text-ink"
-                        : "bg-white/70 text-ink/50"
+                        : "bg-white/70 text-ink/70"
                     }`}
                   >
                     {i + 1}
@@ -110,7 +110,7 @@ export function LeaderboardTable({ stats }: { stats: PlayerStats[] }) {
                   <div className="font-heading text-lg font-bold text-primary">
                     {s.games > 0 ? `${Math.round(s.win_rate * 100)}%` : "—"}
                   </div>
-                  <div className="text-[11px] text-ink/50">
+                  <div className="text-[11px] text-ink/70">
                     {s.wins}W · {s.losses}L · {s.games}G
                   </div>
                 </div>

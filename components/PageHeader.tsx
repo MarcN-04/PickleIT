@@ -17,7 +17,7 @@ export function PageHeader({
         <h1 className="font-heading text-2xl font-bold tracking-tight text-ink lg:text-3xl">
           {title}
         </h1>
-        {subtitle && <p className="mt-0.5 text-sm text-ink/55">{subtitle}</p>}
+        {subtitle && <p className="mt-0.5 text-sm text-ink/70">{subtitle}</p>}
       </div>
       {action && <div className="shrink-0 pt-1">{action}</div>}
     </header>

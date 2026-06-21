@@ -27,7 +27,7 @@ export default async function PlayPage() {
         <PageHeader title="Play" subtitle="No active session" />
         <Card className="flex flex-col items-center p-8 text-center" animateIn>
           <PlayIcon size={36} className="mb-2 text-primary" />
-          <p className="text-sm text-ink/60">
+          <p className="text-sm text-ink/70">
             There&apos;s no game running right now. An organizer can start a
             session.
           </p>

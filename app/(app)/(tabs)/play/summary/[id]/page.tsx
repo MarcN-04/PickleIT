@@ -52,7 +52,7 @@ export default async function SummaryPage({
                 className="glass-inner flex items-center justify-between px-4 py-3"
               >
                 <div className="flex items-center gap-3">
-                  <span className="font-heading text-xs font-bold text-ink/40">
+                  <span className="font-heading text-xs font-bold text-ink/65">
                     {i + 1}
                   </span>
                   <span className="font-medium text-ink">{p.name}</span>
@@ -61,7 +61,7 @@ export default async function SummaryPage({
                   className={
                     i === 0 && p.wins > 0
                       ? "rounded-full bg-gradient-to-r from-accent-from to-accent-to px-3 py-1 text-xs font-bold text-ink"
-                      : "text-sm text-ink/60"
+                      : "text-sm text-ink/70"
                   }
                 >
                   {p.wins}W · {p.games}G
@@ -76,22 +76,22 @@ export default async function SummaryPage({
         Games played
       </h2>
       {summary.games.length === 0 ? (
-        <p className="px-1 py-6 text-center text-sm text-ink/50">
+        <p className="px-1 py-6 text-center text-sm text-ink/70">
           No games were completed in this session.
         </p>
       ) : (
-        <ul className="grid gap-2 pb-2 sm:grid-cols-2">
+        <ul className="grid gap-2 pb-2 sm:grid-cols-2 xl:grid-cols-3">
           {summary.games.map((g, i) => (
             <li key={g.gameId}>
               <Card className="p-3">
                 <div className="mb-2 flex items-center justify-between">
-                  <span className="font-heading text-xs font-bold text-ink/50">
+                  <span className="font-heading text-xs font-bold text-ink/70">
                     Game {i + 1} · Court {g.court}
                   </span>
                 </div>
                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                   <TeamLine team={g.teamA} won={g.winner === "a"} />
-                  <span className="font-heading text-[11px] font-bold text-ink/40">
+                  <span className="font-heading text-[11px] font-bold text-ink/65">
                     VS
                   </span>
                   <TeamLine team={g.teamB} won={g.winner === "b"} alignRight />
@@ -109,7 +109,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="text-center">
       <div className="font-heading text-3xl font-bold text-ink">{value}</div>
-      <div className="text-xs uppercase tracking-wide text-ink/50">{label}</div>
+      <div className="text-xs uppercase tracking-wide text-ink/70">{label}</div>
     </div>
   );
 }
@@ -128,7 +128,7 @@ function TeamLine({
       className={`flex flex-col gap-1 rounded-glass p-2 ${
         won
           ? "bg-gradient-to-br from-accent-from/25 to-accent-to/25"
-          : "bg-white/40"
+          : "bg-white/60"
       } ${alignRight ? "items-end text-right" : "items-start"}`}
     >
       {won && (

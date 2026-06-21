@@ -51,7 +51,7 @@ export default async function PlayerProfilePage({
         <div className="flex items-center gap-3">
           <CategoryBadge category={player.category} />
           {player.age != null && (
-            <span className="text-sm text-ink/60">Age {player.age}</span>
+            <span className="text-sm text-ink/70">Age {player.age}</span>
           )}
         </div>
         {canEdit && (
@@ -85,7 +85,7 @@ export default async function PlayerProfilePage({
         Recent games
       </h2>
       {recent.length === 0 ? (
-        <p className="px-1 py-6 text-center text-sm text-ink/50">
+        <p className="px-1 py-6 text-center text-sm text-ink/70">
           No games played yet.
         </p>
       ) : (
@@ -99,7 +99,7 @@ export default async function PlayerProfilePage({
                 <span className="text-sm font-medium text-ink">
                   {g.session_name}
                 </span>
-                <span className="text-xs text-ink/50">
+                <span className="text-xs text-ink/70">
                   Court {g.court_number} ·{" "}
                   {new Date(g.ended_at).toLocaleDateString()}
                 </span>
@@ -108,7 +108,7 @@ export default async function PlayerProfilePage({
                 className={
                   g.won
                     ? "rounded-full bg-gradient-to-r from-accent-from to-accent-to px-3 py-1 text-xs font-bold text-ink"
-                    : "rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-ink/55"
+                    : "rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-ink/70"
                 }
               >
                 {g.won ? "Win" : "Loss"}
@@ -132,7 +132,7 @@ function Stat({
 }) {
   return (
     <Card className="p-4">
-      <div className="text-xs font-medium uppercase tracking-wide text-ink/50">
+      <div className="text-xs font-medium uppercase tracking-wide text-ink/70">
         {label}
       </div>
       <div

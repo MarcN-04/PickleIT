@@ -65,7 +65,7 @@ export function AddToSessionDialog({
               </h2>
 
               {candidates.length === 0 ? (
-                <p className="py-6 text-center text-sm text-ink/50">
+                <p className="py-6 text-center text-sm text-ink/70">
                   Everyone in the roster is already in this session.
                 </p>
               ) : (

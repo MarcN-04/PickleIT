@@ -6,13 +6,13 @@ import { isPending } from "@/lib/auth/roles";
 
 /**
  * Shell for the four main tabs (Play / Players / Leaderboard / Settings).
- * Adaptive navigation: a fixed left SideNav on desktop (≥1024px) and the
- * bottom TabBar on mobile/tablet — never both. Content sits in a wide,
- * centered container so it uses the space on large screens without becoming
- * an unreadable full-bleed.
+ * Adaptive navigation via a flex row: a full-height left SideNav on desktop
+ * (≥1024px) and the bottom TabBar on mobile/tablet — never both.
  *
- * - mobile: single column, pb-24 leaves room for the fixed bottom TabBar.
- * - desktop: lg:pl-60 offsets the fixed sidebar; content max-w-5xl centered.
+ * - desktop: SideNav is a flex child (full height by the row); content is a
+ *   flex-1 column whose inner wrapper is LEFT-aligned with a capped width, so
+ *   it hugs the sidebar and fills the space (no empty band, no centered void).
+ * - mobile: single column; pb-24 clears the fixed bottom TabBar.
  */
 export default async function TabsLayout({
   children,
@@ -24,10 +24,12 @@ export default async function TabsLayout({
   if (isPending(profile.role)) redirect("/pending");
 
   return (
-    <div className="min-h-dvh lg:pl-60">
+    <div className="flex min-h-dvh">
       <SideNav username={profile.username} role={profile.role} />
-      <main className="mx-auto w-full max-w-5xl px-3 pb-24 sm:px-5 lg:px-8 lg:pb-10 lg:pt-4">
-        {children}
+      <main className="min-w-0 flex-1">
+        <div className="w-full max-w-7xl px-4 pb-24 pt-2 sm:px-6 lg:px-8 lg:pb-3 lg:pt-3">
+          {children}
+        </div>
       </main>
       <TabBar />
     </div>
