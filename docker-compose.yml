@@ -1,7 +1,7 @@
 # docker-compose.yml — local development ONLY.
 #
 # Day-to-day commands:
-#   docker compose up                         -> Next.js dev server at localhost:3000
+#   docker compose up                         -> Next.js dev server at localhost:3001
 #   docker compose run --rm app <command>     -> one-off task (e.g. install a package, run tests)
 #
 # Vercel does NOT use this file. Supabase is the hosted cloud DB, reached via .env.local.
@@ -12,7 +12,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - "3001:3000"
+      - "3001:3001"
     volumes:
       # Bind-mount the source for hot reload.
       - .:/app
