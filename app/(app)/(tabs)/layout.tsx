@@ -27,7 +27,7 @@ export default async function TabsLayout({
     <div className="flex min-h-dvh">
       <SideNav username={profile.username} role={profile.role} />
       <main className="min-w-0 flex-1">
-        <div className="w-full max-w-7xl px-4 pb-24 pt-2 sm:px-6 lg:px-8 lg:pb-3 lg:pt-3">
+        <div className="w-full max-w-7xl px-7 pb-24 pt-6 sm:px-6 lg:px-8 lg:pb-3 lg:pt-3">
           {children}
         </div>
       </main>
