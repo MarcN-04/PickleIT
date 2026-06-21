@@ -204,7 +204,7 @@ function SetupHeader({
   onStepClick?: (n: 1) => void;
 }) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 px-1 pb-4 pt-2">
+    <header className="flex flex-wrap items-center justify-center gap-x-6 gap-y-4 px-1 pb-4 pt-2 lg:justify-between">
       <div className="flex items-center gap-3">
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-glass bg-gradient-to-br from-primary-from to-primary-to text-white shadow-glow-primary"
@@ -437,7 +437,7 @@ export function StartSessionFlow({
               />
 
               {/* The only scroll region within the fixed band. */}
-              <div className="no-scrollbar flex flex-col gap-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-1">
+              <div className="no-scrollbar flex flex-col gap-6 pb-20 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-1">
               {totalPlayers === 0 ? (
                 <Card className="flex flex-col items-center gap-2 py-12 text-center">
                   <p className="font-heading text-base font-semibold text-ink">

@@ -68,9 +68,10 @@ export function SessionSummaryPanel({
 
   return (
     <>
-      {/* ── Mobile / tablet: a compact sticky action bar above the TabBar.
+      {/* ── Mobile / tablet: a compact fixed action bar above the TabBar.
           Hidden on lg, where the full sidebar (below) takes over. ── */}
-      <div className="sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 lg:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-30 lg:hidden">
+        <div className="mx-auto max-w-md px-4 sm:max-w-lg">
         {error && (
           <p
             role="alert"
@@ -117,6 +118,7 @@ export function SessionSummaryPanel({
           >
             {isPending ? "Starting…" : `Start · ${count}`}
           </Button>
+        </div>
         </div>
       </div>
 

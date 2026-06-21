@@ -63,7 +63,7 @@ export default async function SettingsPage() {
             About
           </h2>
           <p className="text-sm text-ink/70">
-            PickleIT · v0.1.0 — automated, fair pickleball rotation.
+            PickleIT · v0.1.1 — automated, fair pickleball rotation.
           </p>
         </Card>
       </div>
