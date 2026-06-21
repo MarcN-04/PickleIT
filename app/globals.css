@@ -88,33 +88,39 @@ h1, h2, h3, h4, .font-heading {
 /* ----------------------------------------------------------------------------
    Glass panel — frosted translucent white surface.
 ---------------------------------------------------------------------------- */
-.glass {
-  position: relative;
-  /* Higher opacity so dark ink text reads clearly over the bright gradient
-     (AA contrast). Still frosted via backdrop-blur. */
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    0 10px 30px -8px rgba(20, 150, 85, 0.18),
-    0 2px 8px -2px rgba(20, 41, 29, 0.08);
-  border-radius: 20px;
-}
-/* Subtle inner top highlight — a fixed-height sheen so it reads the same on
-   small cards and tall surfaces (e.g. the desktop sidebar) without appearing
-   to fade the whole element out partway down. */
-.glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.55),
-    rgba(255, 255, 255, 0) 120px
-  );
-  pointer-events: none;
+/* In @layer components so Tailwind positioning utilities (`fixed`, `sticky`,
+   `absolute`) override `.glass`'s own `position: relative` — utilities live in
+   the later `@layer utilities` and thus win. Without this, `glass fixed` on the
+   TabBar resolved to `position: relative` and the bar fell into normal flow. */
+@layer components {
+  .glass {
+    position: relative;
+    /* Higher opacity so dark ink text reads clearly over the bright gradient
+       (AA contrast). Still frosted via backdrop-blur. */
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow:
+      0 10px 30px -8px rgba(20, 150, 85, 0.18),
+      0 2px 8px -2px rgba(20, 41, 29, 0.08);
+    border-radius: 20px;
+  }
+  /* Subtle inner top highlight — a fixed-height sheen so it reads the same on
+     small cards and tall surfaces (e.g. the desktop sidebar) without appearing
+     to fade the whole element out partway down. */
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.55),
+      rgba(255, 255, 255, 0) 120px
+    );
+    pointer-events: none;
+  }
 }
 
 /* Denser inner surface for dashboard player rows — more opaque for outdoor legibility. */
@@ -122,4 +128,14 @@ h1, h2, h3, h4, .font-heading {
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 14px;
+}
+
+/* Hide the scrollbar while keeping the element scrollable (used by the
+   step-2 player list so the rail doesn't sit over the cards). */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/old Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/WebKit */
 }

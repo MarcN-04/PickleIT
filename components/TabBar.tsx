@@ -20,7 +20,7 @@ export function TabBar() {
 
   return (
     <nav
-      className="glass fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-md items-stretch justify-around rounded-b-none rounded-t-glass-lg px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 lg:hidden"
+      className="glass fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-md items-stretch justify-around rounded-b-none rounded-t-glass-lg px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 sm:max-w-lg lg:hidden"
       aria-label="Primary"
     >
       {NAV_ITEMS.map(({ href, label, Icon }) => {

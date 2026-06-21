@@ -3,11 +3,17 @@
 import { useMemo, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, Button, Chip } from "@/components/ui";
-import { PageHeader } from "@/components/PageHeader";
+import { cn } from "@/lib/cn";
 import { CATEGORIES, CATEGORY_META, type Category } from "@/lib/categories";
-import { popIn, staggerContainer } from "@/lib/motion";
+import { popIn, staggerContainer, springSnappy, springOvershoot } from "@/lib/motion";
 import { startSession } from "@/lib/data/sessionActions";
-import { ScaleIcon, CrownIcon } from "@/components/icons";
+import {
+  ScaleIcon,
+  CrownIcon,
+  CheckIcon,
+  PlayIcon,
+  PlayersIcon,
+} from "@/components/icons";
 import { SessionPreview } from "./SessionPreview";
 import { SessionSummaryPanel } from "./SessionSummaryPanel";
 import { PlayerCard } from "./PlayerCard";
@@ -39,49 +45,182 @@ const STEPS = [
   { n: 2 as const, label: "Players" },
 ];
 
-/** Slim two-step progress marker. Reflects the current step; emerald for done/active. */
-function StepIndicator({ step }: { step: 1 | 2 }) {
+/**
+ * Bold two-step progress rail. Each step is a pill (number/check badge + label);
+ * the connector between them is a thick track that fills emerald as you advance
+ * (animated via a layoutId pill, matching the SideNav active-indicator). The
+ * ACTIVE node gets a subtle emerald pulse to draw the eye. Step 1 becomes a real
+ * button once done, so you can jump back. Lime stays reserved — emerald only.
+ */
+function StepIndicator({
+  step,
+  onStepClick,
+}: {
+  step: 1 | 2;
+  onStepClick?: (n: 1) => void;
+}) {
   return (
-    <ol className="mb-6 flex items-center gap-3" aria-label="Setup progress">
+    <ol className="flex items-center gap-2 sm:gap-3" aria-label="Setup progress">
       {STEPS.map(({ n, label }, i) => {
         const active = n === step;
         const done = n < step;
+        const complete = active || done;
+
+        const inner = (
+          <>
+            <span
+              className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                complete
+                  ? "bg-gradient-to-br from-primary-from to-primary-to text-white shadow-glow-primary"
+                  : "bg-white text-ink/70 shadow-[inset_0_0_0_1.5px_rgba(20,41,29,0.18)]"
+              }`}
+            >
+              {/* Subtle pulse on the active node only (reduced-motion safe — it
+                  only animates scale/opacity, which framer pauses on reduce). */}
+              {active && (
+                <motion.span
+                  aria-hidden
+                  className="absolute inset-0 rounded-full bg-primary/40"
+                  initial={{ opacity: 0.5, scale: 1 }}
+                  animate={{ opacity: 0, scale: 1.65 }}
+                  transition={{
+                    duration: 1.8,
+                    repeat: Infinity,
+                    ease: "easeOut",
+                  }}
+                />
+              )}
+              <AnimatePresence mode="wait" initial={false}>
+                {done ? (
+                  <motion.span
+                    key="check"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                    transition={springSnappy}
+                    className="relative flex"
+                  >
+                    <CheckIcon size={16} strokeWidth={2.5} />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="num"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                    transition={springSnappy}
+                    className="relative"
+                  >
+                    {n}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </span>
+            <span
+              className={`font-heading text-xs leading-none sm:text-sm ${
+                active
+                  ? "font-bold text-ink"
+                  : done
+                    ? "font-semibold text-ink/80"
+                    : "font-medium text-ink/70"
+              }`}
+            >
+              {label}
+            </span>
+          </>
+        );
+
+        const pillBase =
+          "relative z-0 flex items-center gap-2 rounded-full px-2.5 py-1.5 sm:px-3";
+
         return (
           <li
             key={n}
             aria-current={active ? "step" : undefined}
-            className="flex items-center gap-3"
+            className="flex items-center gap-2 sm:gap-3"
           >
-            <span className="flex items-center gap-2">
-              <span
-                className={`flex h-6 w-6 items-center justify-center rounded-full border text-xs font-semibold transition-colors ${
-                  active || done
-                    ? "border-primary bg-gradient-to-r from-primary-from to-primary-to text-white"
-                    : "border-ink/20 text-ink/55"
-                }`}
+            {done && onStepClick ? (
+              <button
+                type="button"
+                onClick={() => onStepClick(1)}
+                aria-label={`Go back to step ${n}: ${label}`}
+                className={`${pillBase} bg-white/70 transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
               >
-                {n}
+                {inner}
+              </button>
+            ) : (
+              <span className={pillBase}>
+                {active && (
+                  <motion.span
+                    layoutId="step-active-pill"
+                    className="absolute inset-0 -z-10 rounded-full bg-gradient-to-br from-primary-from/12 to-primary-to/12 shadow-[inset_0_0_0_1px_rgba(20,150,85,0.25)]"
+                    transition={{ type: "spring", stiffness: 500, damping: 34 }}
+                  />
+                )}
+                {inner}
               </span>
-              <span
-                className={`font-heading text-sm font-semibold ${
-                  active ? "text-ink" : "text-ink/55"
-                }`}
-              >
-                {label}
-              </span>
-            </span>
+            )}
+
+            {/* Thick filling connector — emerald pill grows over the track.
+                Visible on mobile too (narrower), so progress always shows. */}
             {i < STEPS.length - 1 && (
               <span
-                className={`hidden h-px w-8 sm:block ${
-                  done ? "bg-primary/50" : "bg-ink/15"
-                }`}
+                className="relative h-1.5 w-8 shrink-0 overflow-hidden rounded-full bg-ink/15 sm:w-16"
                 aria-hidden
-              />
+              >
+                {done && (
+                  <motion.span
+                    layoutId="step-connector-fill"
+                    className="absolute inset-0 rounded-full bg-gradient-to-r from-primary-from to-primary-to"
+                    transition={{ type: "spring", stiffness: 500, damping: 34 }}
+                  />
+                )}
+              </span>
             )}
           </li>
         );
       })}
     </ol>
+  );
+}
+
+/**
+ * Setup-flow header as a single-row context bar: an emerald icon chip + punchy
+ * title/subtitle on the left, with the bold progress rail (+ "Step N of 2"
+ * micro-label) aligned on the same row to the right. Wraps gracefully on
+ * narrow mobile.
+ */
+function SetupHeader({
+  title,
+  subtitle,
+  Icon,
+  step,
+  onStepClick,
+}: {
+  title: string;
+  subtitle: string;
+  Icon: (props: { size?: number }) => JSX.Element;
+  step: 1 | 2;
+  onStepClick?: (n: 1) => void;
+}) {
+  return (
+    <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 px-1 pb-4 pt-2">
+      <div className="flex items-center gap-3">
+        <span
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-glass bg-gradient-to-br from-primary-from to-primary-to text-white shadow-glow-primary"
+          aria-hidden
+        >
+          <Icon size={22} />
+        </span>
+        <div className="min-w-0">
+          <h1 className="font-heading text-2xl font-bold leading-tight tracking-tight text-ink lg:text-3xl">
+            {title}
+          </h1>
+          <p className="mt-0.5 text-sm text-ink/70">{subtitle}</p>
+        </div>
+      </div>
+      <StepIndicator step={step} onStepClick={onStepClick} />
+    </header>
   );
 }
 
@@ -151,23 +290,18 @@ export function StartSessionFlow({
   }
 
   return (
-    <div
-      className={
-        step === 1
-          ? "lg:flex lg:h-[calc(100dvh-1.5rem)] lg:flex-col lg:overflow-hidden"
-          : undefined
-      }
-    >
-      <PageHeader
-        title={step === 1 ? "Start a session" : "Who's here today?"}
-        subtitle={
-          step === 1
-            ? "Set your courts and how players pair up."
-            : "Tap the players who showed up — pick at least 4 to start."
-        }
-      />
-
-      <StepIndicator step={step} />
+    <div className="lg:flex lg:h-[calc(100dvh-1.5rem)] lg:flex-col lg:overflow-hidden">
+      {/* Step 1 keeps the shared header/steps at the top of the band. Step 2
+          moves them inside its left column so the summary panel spans the full
+          band height (top + bottom flush with the SideNav). */}
+      {step === 1 && (
+        <SetupHeader
+          title="Set up the session"
+          subtitle="Pick your courts and how players pair up."
+          Icon={PlayIcon}
+          step={1}
+        />
+      )}
 
       <AnimatePresence mode="wait">
         {step === 1 ? (
@@ -215,23 +349,26 @@ export function StartSessionFlow({
                         const Icon = MODE_ICON[m];
                         const isSel = mode === m;
                         return (
-                          <button
+                          <motion.button
                             key={m}
                             type="button"
                             onClick={() => setMode(m)}
                             aria-pressed={isSel}
-                            className={`flex items-start gap-3 rounded-glass border p-3 text-left transition-shadow ${
+                            whileTap={{ scale: 0.98, transition: springSnappy }}
+                            className={cn(
+                              "group relative flex items-start gap-3 rounded-glass border bg-white/90 p-4 text-left transition-all",
                               isSel
-                                ? "border-primary/40 bg-gradient-to-r from-primary-from/10 to-primary-to/10 shadow-glow-primary"
-                                : "border-white/70 bg-white/70 hover:bg-white/85"
-                            }`}
+                                ? "border-primary bg-white shadow-glow-primary ring-1 ring-primary/30"
+                                : "border-white/80 hover:border-primary/30 hover:shadow-glass"
+                            )}
                           >
                             <span
-                              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                              className={cn(
+                                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
                                 isSel
                                   ? "bg-gradient-to-br from-primary-from to-primary-to text-white"
-                                  : "bg-white/70 text-ink/60"
-                              }`}
+                                  : "bg-ink/5 text-ink/55"
+                              )}
                               aria-hidden
                             >
                               <Icon size={18} />
@@ -244,17 +381,20 @@ export function StartSessionFlow({
                                 {MODE_BLURB[m]}
                               </div>
                             </div>
-                            <span
-                              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-                                isSel ? "border-primary" : "border-ink/25"
-                              }`}
+                            <motion.span
+                              animate={{ scale: isSel ? 1 : 0.9 }}
+                              transition={springOvershoot}
+                              className={cn(
+                                "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs transition-colors",
+                                isSel
+                                  ? "border-primary bg-primary text-white"
+                                  : "border-ink/20 text-transparent group-hover:border-primary/40"
+                              )}
                               aria-hidden
                             >
-                              {isSel && (
-                                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-                              )}
-                            </span>
-                          </button>
+                              ✓
+                            </motion.span>
+                          </motion.button>
                         );
                       }
                     )}
@@ -284,10 +424,20 @@ export function StartSessionFlow({
             initial="hidden"
             animate="visible"
             exit={{ opacity: 0, y: -8 }}
-            className="lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-6"
+            className="lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-stretch lg:gap-6 lg:overflow-hidden"
           >
-            {/* Left — scrolling player list */}
-            <div className="flex flex-col gap-6">
+            {/* Left — header + steps pinned at top, then the scrolling list. */}
+            <div className="flex flex-col lg:h-full lg:min-h-0 lg:overflow-hidden">
+              <SetupHeader
+                title="Who's playing?"
+                subtitle="Tap everyone who showed up — at least 4 to start."
+                Icon={PlayersIcon}
+                step={2}
+                onStepClick={() => setStep(1)}
+              />
+
+              {/* The only scroll region within the fixed band. */}
+              <div className="no-scrollbar flex flex-col gap-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-1">
               {totalPlayers === 0 ? (
                 <Card className="flex flex-col items-center gap-2 py-12 text-center">
                   <p className="font-heading text-base font-semibold text-ink">
@@ -325,7 +475,7 @@ export function StartSessionFlow({
                         variants={staggerContainer}
                         initial="hidden"
                         animate="visible"
-                        className="grid auto-rows-fr gap-3 sm:grid-cols-2"
+                        className="grid gap-3 sm:grid-cols-2"
                       >
                         {group.map((p, i) => {
                           const lastOdd = odd && i === group.length - 1;
@@ -348,10 +498,12 @@ export function StartSessionFlow({
                   );
                 })
               )}
+              </div>
             </div>
 
-            {/* Right — full-height summary sidebar (stacks below on mobile) */}
-            <div className="mt-6 lg:mt-0">
+            {/* Right — desktop full-height sidebar (flush with SideNav); on
+                mobile the panel renders its own sticky action bar, so no margin. */}
+            <div className="lg:h-full lg:min-h-0">
               <SessionSummaryPanel
                 selectedPlayers={selectedPlayers}
                 courtCount={courtCount}
