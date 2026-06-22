@@ -9,7 +9,7 @@ import type { Category } from "@/lib/categories";
 export type PairingMode = "balance" | "king_of_the_court";
 export type SessionStatus = "active" | "ended";
 export type SessionPlayerState = "playing" | "waiting" | "left";
-export type GameStatus = "in_progress" | "completed";
+export type GameStatus = "pending" | "in_progress" | "completed";
 export type TeamSide = "a" | "b";
 export type UserRole = "admin" | "organizer" | "viewer" | "pending";
 

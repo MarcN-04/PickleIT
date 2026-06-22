@@ -16,7 +16,7 @@ import type { EnginePlayer, EngineState, EngineGame } from "@/lib/rotation";
 export interface LiveSessionState {
   session: Session;
   sessionPlayers: Array<SessionPlayer & { player: Player }>;
-  games: Game[]; // in_progress only
+  games: Game[]; // pending + in_progress
   gamePlayers: GamePlayer[];
 }
 
@@ -42,7 +42,7 @@ export async function loadLiveSession(
     .from("games")
     .select("*")
     .eq("session_id", sessionId)
-    .eq("status", "in_progress");
+    .in("status", ["pending", "in_progress"]);
 
   const gameIds = (games ?? []).map((g) => (g as Game).id);
   let gamePlayers: GamePlayer[] = [];

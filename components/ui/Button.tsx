@@ -4,7 +4,7 @@ import { motion, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/cn";
 import { springSnappy } from "@/lib/motion";
 
-type Variant = "primary" | "accent" | "glass" | "ghost";
+type Variant = "primary" | "accent" | "glass" | "ghost" | "destructive";
 type Size = "sm" | "md" | "lg";
 
 type ButtonProps = Omit<HTMLMotionProps<"button">, "ref"> & {
@@ -25,6 +25,10 @@ const VARIANT_CLASSES: Record<Variant, string> = {
     "glass !rounded-full text-ink hover:shadow-glass-lift",
   // Minimal text button.
   ghost: "text-ink/70 hover:text-ink hover:bg-white/40",
+  // Quiet destructive — light red outline, fills softly on hover. For actions
+  // that shouldn't be tapped by accident (e.g. End session).
+  destructive:
+    "border border-red-200 bg-white/60 text-red-600 hover:bg-red-50 hover:border-red-300",
 };
 
 const SIZE_CLASSES: Record<Size, string> = {
