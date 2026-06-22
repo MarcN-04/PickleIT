@@ -106,7 +106,7 @@ export default async function LiveSessionPage({
         <div className="flex flex-col lg:h-full lg:min-h-0 lg:overflow-hidden">
           {/* Header — confined to the courts column so End session aligns above
               the courts, not stretched across the panel. */}
-          <header className="flex flex-wrap items-start justify-between gap-3 px-1 pb-4 pt-2">
+          <header className="flex flex-wrap items-center justify-between gap-3 px-1 pb-4 pt-2">
             <div>
               <h1 className="font-heading text-2xl font-bold tracking-tight text-ink lg:text-3xl">
                 {dateTitle}
@@ -128,14 +128,16 @@ export default async function LiveSessionPage({
               </p>
             </div>
             {canManage && (
-              <div className="shrink-0 pt-1">
+              <div className="shrink-0">
                 <EndSessionButton sessionId={session.id} />
               </div>
             )}
           </header>
 
-          {/* The only scroll region within the fixed band. */}
-          <div className="no-scrollbar lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-1">
+          {/* The only scroll region within the fixed band. Negative margin +
+              matching padding gives card drop-shadows room to breathe instead
+              of being clipped by overflow-y-auto. */}
+          <div className="no-scrollbar -mx-2 px-2 pb-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
             {courts.length === 0 ? (
               <Card className="flex flex-col items-center p-8 text-center" animateIn>
                 <HourglassIcon size={32} className="mb-2 text-ink/65" />
@@ -146,10 +148,11 @@ export default async function LiveSessionPage({
                 </p>
               </Card>
             ) : (
-              // Uniform cards: every court is 320–360px wide and identical;
-              // rows stretch to equal height. Long names truncate (see
-              // MatchupRow) instead of widening a card.
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(320px,100%),360px))] items-stretch gap-4">
+              // Uniform cards: at least 320px wide, but stretch to fill the
+              // available width (auto-fit collapses empty tracks; 1fr removes
+              // the cap). Rows stretch to equal height. Long names truncate
+              // (see MatchupRow) instead of widening a card.
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(320px,100%),1fr))] items-stretch gap-4">
                 {courts.map((c) => (
                   <CourtCard
                     key={c.court}

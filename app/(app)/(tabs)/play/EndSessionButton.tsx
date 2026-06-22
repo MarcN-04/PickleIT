@@ -11,7 +11,7 @@ export function EndSessionButton({ sessionId }: { sessionId: string }) {
   return (
     <Button
       variant="destructive"
-      size="sm"
+      size="md"
       disabled={isPending}
       onClick={() => {
         if (!confirm("End this session? This can't be undone.")) return;
