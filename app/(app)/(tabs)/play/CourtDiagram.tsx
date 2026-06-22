@@ -1,13 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { initials } from "@/lib/initials";
 import { springOvershoot } from "@/lib/motion";
 
 /**
  * A single mini pickleball court, drawn horizontally (net runs vertically down
  * the middle). Shows the non-volley "kitchen" zones either side of the net,
  * service lines, and 4 player dots — 2 Team A (emerald, left) + 2 Team B
- * (lime, right) — sitting in their service boxes. Purely presentational.
+ * (lime, right) — sitting in their service boxes, each labelled with the
+ * player's initials. Purely presentational.
  */
 
 // viewBox geometry (100 x 64). Net at x=50; kitchen spans x≈38–62.
@@ -18,14 +20,38 @@ const SURFACE_FROM = "rgba(20,150,85,0.10)";
 const SURFACE_TO = "rgba(155,196,22,0.10)";
 const KITCHEN = "rgba(20,150,85,0.10)";
 
-const DOTS = [
-  { cx: 22, cy: 22, fill: A },
-  { cx: 22, cy: 42, fill: A },
-  { cx: 78, cy: 22, fill: B },
-  { cx: 78, cy: 42, fill: B },
-];
+// Fixed dot positions: Team A left half, Team B right half.
+const SLOTS = [
+  { cx: 22, cy: 22 },
+  { cx: 22, cy: 42 },
+  { cx: 78, cy: 22 },
+  { cx: 78, cy: 42 },
+] as const;
 
-export function CourtDiagram({ label }: { label?: string }) {
+export type DiagramPlayer = { id: string; name: string };
+
+export function CourtDiagram({
+  teamA = [],
+  teamB = [],
+  label,
+  size = "default",
+}: {
+  teamA?: DiagramPlayer[];
+  teamB?: DiagramPlayer[];
+  label?: string;
+  size?: "default" | "sm";
+}) {
+  // Map the (up to) 4 players onto fixed slots: A→left two, B→right two.
+  const placed = [
+    { player: teamA[0], fill: A },
+    { player: teamA[1], fill: A },
+    { player: teamB[0], fill: B },
+    { player: teamB[1], fill: B },
+  ];
+
+  const r = size === "sm" ? 6 : 5;
+  const fontSize = size === "sm" ? 5 : 4.5;
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-1.5">
       <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-primary/20 bg-white/55 p-2">
@@ -78,22 +104,42 @@ export function CourtDiagram({ label }: { label?: string }) {
             strokeDasharray="3 2.5"
           />
 
-          {/* Player dots */}
-          {DOTS.map((d, i) => (
-            <motion.circle
-              key={i}
-              cx={d.cx}
-              cy={d.cy}
-              r="5"
-              fill={d.fill}
-              stroke="white"
-              strokeWidth="1.5"
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ ...springOvershoot, delay: 0.04 * i }}
-              style={{ transformOrigin: `${d.cx}px ${d.cy}px` }}
-            />
-          ))}
+          {/* Player dots with initials */}
+          {placed.map(({ player, fill }, i) => {
+            const slot = SLOTS[i];
+            return (
+              <motion.g
+                key={player?.id ?? i}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ ...springOvershoot, delay: 0.04 * i }}
+                style={{ transformOrigin: `${slot.cx}px ${slot.cy}px` }}
+              >
+                <circle
+                  cx={slot.cx}
+                  cy={slot.cy}
+                  r={r}
+                  fill={fill}
+                  stroke="white"
+                  strokeWidth="1.5"
+                />
+                {player && (
+                  <text
+                    x={slot.cx}
+                    y={slot.cy}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={fontSize}
+                    fontWeight="700"
+                    fill="white"
+                    style={{ pointerEvents: "none", userSelect: "none" }}
+                  >
+                    {initials(player.name)}
+                  </text>
+                )}
+              </motion.g>
+            );
+          })}
         </svg>
       </div>
       {label && (

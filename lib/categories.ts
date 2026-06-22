@@ -19,24 +19,28 @@ export const SKILL_WEIGHT: Record<Category, number> = {
  */
 export const CATEGORY_META: Record<
   Category,
-  { label: string; bg: string; text: string; order: number }
+  { label: string; bg: string; text: string; dot: string; order: number }
 > = {
   beginner: {
     label: "Beginner",
     bg: "bg-cat-beginner",
     text: "text-cat-beginnerInk",
+    // Solid, legible dot (the darker "ink" tone) for label-less tier markers.
+    dot: "bg-cat-beginnerInk",
     order: 0,
   },
   intermediate: {
     label: "Intermediate",
     bg: "bg-cat-intermediate",
     text: "text-cat-intermediateInk",
+    dot: "bg-cat-intermediateInk",
     order: 1,
   },
   pro: {
     label: "Pro",
     bg: "bg-cat-pro",
     text: "text-cat-proInk",
+    dot: "bg-cat-proInk",
     order: 2,
   },
 };

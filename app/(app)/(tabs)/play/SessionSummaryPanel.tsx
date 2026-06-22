@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui";
 import { CATEGORY_META } from "@/lib/categories";
+import { initials } from "@/lib/initials";
 import { springOvershoot } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import { AddWalkInDialog } from "./AddWalkInDialog";
@@ -12,14 +13,6 @@ const MODE_LABEL: Record<PairingMode, string> = {
   balance: "Balance",
   king_of_the_court: "King of the court",
 };
-
-/** First letters of the first and last word, uppercased, max 2 chars. */
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 type Props = {
   selectedPlayers: Player[];

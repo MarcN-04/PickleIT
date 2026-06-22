@@ -10,7 +10,7 @@ export function EndSessionButton({ sessionId }: { sessionId: string }) {
 
   return (
     <Button
-      variant="glass"
+      variant="destructive"
       size="sm"
       disabled={isPending}
       onClick={() => {

@@ -1,23 +1,29 @@
 import { notFound, redirect } from "next/navigation";
-import { PageHeader } from "@/components/PageHeader";
-import { Card, CategoryBadge } from "@/components/ui";
+import { Card } from "@/components/ui";
 import { HourglassIcon } from "@/components/icons";
 import { EndSessionButton } from "../../EndSessionButton";
 import { CourtCard, type CourtData } from "../CourtCard";
+import { SessionQueuePanel, type QueuePlayer } from "../SessionQueuePanel";
 import { RealtimeSync } from "../RealtimeSync";
 import { AutoInit } from "../AutoInit";
-import { AddToSessionDialog } from "../AddToSessionDialog";
 import { loadLiveSession } from "@/lib/data/liveSession";
 import { getPlayers } from "@/lib/data/players";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { canManageGameplay } from "@/lib/auth/roles";
-import type { Category } from "@/lib/categories";
+import { type Category } from "@/lib/categories";
+
+const DATE_FMT = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+});
 
 /**
- * Live dashboard. Renders courts (teams + timer + winner select), the up-next
- * group, and the numbered waiting list — all reconstructed from the DB so it
- * stays in sync across devices via RealtimeSync. AutoInit fills the courts via
- * the engine on first load.
+ * Live dashboard. A date-titled header with a live indicator + tier legend,
+ * a responsive grid of court cards (real diagrams + matchups + timers), and a
+ * full-height sticky right panel (Up next + waiting list). All reconstructed
+ * from the DB so it stays in sync across devices via RealtimeSync. AutoInit
+ * fills the courts via the engine on first load.
  */
 export default async function LiveSessionPage({
   params,
@@ -34,6 +40,7 @@ export default async function LiveSessionPage({
   const { session, sessionPlayers, games, gamePlayers } = live;
   const modeLabel =
     session.pairing_mode === "balance" ? "Balance" : "King of the court";
+  const dateTitle = DATE_FMT.format(new Date(session.created_at));
 
   // Build court view models.
   const playerById = new Map(sessionPlayers.map((sp) => [sp.player_id, sp.player]));
@@ -62,10 +69,17 @@ export default async function LiveSessionPage({
       };
     });
 
+  const liveCount = courts.filter((c) => c.status === "in_progress").length;
+
   // Waiting list ordered by queue position; up-next = front 4.
-  const waiting = sessionPlayers
+  const waiting: QueuePlayer[] = sessionPlayers
     .filter((sp) => sp.state === "waiting")
-    .sort((a, b) => (a.queue_position ?? 0) - (b.queue_position ?? 0));
+    .sort((a, b) => (a.queue_position ?? 0) - (b.queue_position ?? 0))
+    .map((sp) => ({
+      id: sp.player_id,
+      name: sp.player.name,
+      category: sp.player.category,
+    }));
   const upNext = waiting.slice(0, 4);
   const rest = waiting.slice(4);
 
@@ -81,109 +95,84 @@ export default async function LiveSessionPage({
     .map((p) => ({ id: p.id, name: p.name, category: p.category }));
 
   return (
-    <div>
+    <div className="lg:flex lg:h-[calc(100dvh-1.5rem)] lg:flex-col lg:overflow-hidden">
       <RealtimeSync sessionId={session.id} />
       <AutoInit sessionId={session.id} needsInit={needsInit && canManage} />
 
-      <PageHeader
-        title={session.name}
-        subtitle={`${session.court_count} court${
-          session.court_count > 1 ? "s" : ""
-        } · ${modeLabel}`}
-        action={canManage ? <EndSessionButton sessionId={session.id} /> : undefined}
-      />
-
-      <div className="lg:grid lg:grid-cols-[1fr_20rem] lg:items-start lg:gap-6">
-      {/* Courts */}
-      <div className="lg:min-w-0">
-      {courts.length === 0 ? (
-        <Card className="flex flex-col items-center p-8 text-center" animateIn>
-          <HourglassIcon size={32} className="mb-2 text-ink/65" />
-          <p className="text-sm text-ink/70">
-            {waiting.length < 4
-              ? "Waiting for at least 4 players to fill a court."
-              : "Setting up the courts…"}
-          </p>
-        </Card>
-      ) : (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-          {courts.map((c) => (
-            <CourtCard
-              key={c.court}
-              sessionId={session.id}
-              court={c}
-              canManage={canManage}
-            />
-          ))}
-        </div>
-      )}
-      </div>
-
-      {/* Queue column (Up next + Waiting list) */}
-      <div className="lg:sticky lg:top-4">
-      {/* Up next */}
-      {upNext.length > 0 && (
-        <section className="mt-5 lg:mt-0">
-          <h2 className="mb-2 px-1 font-heading text-sm font-semibold text-ink/70">
-            Up next
-          </h2>
-          <Card className="border border-accent-to/40 bg-gradient-to-br from-accent-from/15 to-accent-to/15 p-3">
-            <ul className="flex flex-wrap gap-2">
-              {upNext.map((sp) => (
-                <li
-                  key={sp.id}
-                  className="flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5"
-                >
-                  <span className="text-sm font-semibold text-ink">
-                    {sp.player.name}
+      {/* Two equal-height columns: courts (header pinned on top, list scrolls)
+          + the full-height queue panel (flush with the SideNav band). */}
+      <div className="lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-stretch lg:gap-6 lg:overflow-hidden">
+        {/* ── Left column: header + scrolling courts ── */}
+        <div className="flex flex-col lg:h-full lg:min-h-0 lg:overflow-hidden">
+          {/* Header — confined to the courts column so End session aligns above
+              the courts, not stretched across the panel. */}
+          <header className="flex flex-wrap items-start justify-between gap-3 px-1 pb-4 pt-2">
+            <div>
+              <h1 className="font-heading text-2xl font-bold tracking-tight text-ink lg:text-3xl">
+                {dateTitle}
+              </h1>
+              <p className="mt-0.5 flex items-center gap-2 text-sm text-ink/70">
+                <span>
+                  {session.court_count} court{session.court_count > 1 ? "s" : ""} ·{" "}
+                  {modeLabel}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-70" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
                   </span>
-                  <CategoryBadge category={sp.player.category} size="sm" />
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </section>
-      )}
-
-      {/* Waiting list */}
-      <section className="mt-5">
-        <div className="mb-2 flex items-center justify-between px-1">
-          <h2 className="font-heading text-sm font-semibold text-ink/70">
-            Waiting list
-          </h2>
-          {canManage && (
-            <AddToSessionDialog sessionId={session.id} candidates={candidates} />
-          )}
-        </div>
-        {waiting.length === 0 ? (
-          <p className="px-1 py-4 text-center text-sm text-ink/70">
-            No one waiting.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2 pb-2">
-            {rest.length === 0 && upNext.length > 0 && (
-              <p className="px-1 text-xs text-ink/65">
-                Everyone waiting is up next.
+                  <span className="font-medium text-ink/80">
+                    {liveCount} game{liveCount === 1 ? "" : "s"} live
+                  </span>
+                </span>
               </p>
+            </div>
+            {canManage && (
+              <div className="shrink-0 pt-1">
+                <EndSessionButton sessionId={session.id} />
+              </div>
             )}
-            {rest.map((sp, i) => (
-              <li
-                key={sp.id}
-                className="glass-inner flex items-center justify-between px-4 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="font-heading text-xs font-bold text-ink/65">
-                    {i + 5}
-                  </span>
-                  <span className="font-medium text-ink">{sp.player.name}</span>
-                </div>
-                <CategoryBadge category={sp.player.category} size="sm" />
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      </div>
+          </header>
+
+          {/* The only scroll region within the fixed band. */}
+          <div className="no-scrollbar lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-1">
+            {courts.length === 0 ? (
+              <Card className="flex flex-col items-center p-8 text-center" animateIn>
+                <HourglassIcon size={32} className="mb-2 text-ink/65" />
+                <p className="text-sm text-ink/70">
+                  {waiting.length < 4
+                    ? "Waiting for at least 4 players to fill a court."
+                    : "Setting up the courts…"}
+                </p>
+              </Card>
+            ) : (
+              // Uniform cards: every court is 320–360px wide and identical;
+              // rows stretch to equal height. Long names truncate (see
+              // MatchupRow) instead of widening a card.
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(320px,100%),360px))] items-stretch gap-4">
+                {courts.map((c) => (
+                  <CourtCard
+                    key={c.court}
+                    sessionId={session.id}
+                    court={c}
+                    canManage={canManage}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Right column: full-height queue panel (drops in-flow on mobile) ── */}
+        <div className="mt-5 lg:mt-0 lg:h-full lg:min-h-0">
+          <SessionQueuePanel
+            sessionId={session.id}
+            upNext={upNext}
+            rest={rest}
+            candidates={candidates}
+            canManage={canManage}
+          />
+        </div>
       </div>
     </div>
   );
