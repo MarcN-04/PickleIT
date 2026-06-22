@@ -80,7 +80,7 @@ async function insertGame(
 ) {
   const { data: game, error } = await supabase
     .from("games")
-    .insert({ session_id: sessionId, court_number: court, status: "in_progress" })
+    .insert({ session_id: sessionId, court_number: court, status: "pending" })
     .select("id")
     .single();
   if (error || !game) throw error ?? new Error("game insert failed");
@@ -127,6 +127,38 @@ export async function ensureGamesStarted(sessionId: string): Promise<void> {
 }
 
 /**
+ * Promote the pending game on `court` to in_progress, starting its timer now.
+ */
+export async function startGame(
+  sessionId: string,
+  court: number
+): Promise<{ error: string } | void> {
+  const profile = await getCurrentProfile();
+  if (!canManageGameplay(profile?.role)) {
+    return { error: "You don't have permission to start games." };
+  }
+
+  const supabase = createClient();
+  const live = await loadLiveSession(sessionId);
+  if (!live || live.session.status !== "active") {
+    return { error: "Session is not active." };
+  }
+
+  const dbGame = live.games.find(
+    (g) => g.court_number === court && g.status === "pending"
+  );
+  if (!dbGame) return { error: "No pending game on that court." };
+
+  const { error } = await supabase
+    .from("games")
+    .update({ status: "in_progress", started_at: new Date().toISOString() })
+    .eq("id", dbGame.id);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/play/session/${sessionId}`);
+}
+
+/**
  * Record a winner for the game on `court`: completes that game, runs the engine
  * for the chosen pairing mode, then persists the freed/refilled court and the
  * updated queue + games_played.
@@ -149,6 +181,9 @@ export async function recordWinner(
 
   const dbGame = live.games.find((g) => g.court_number === court);
   if (!dbGame) return { error: "No active game on that court." };
+  if (dbGame.status !== "in_progress") {
+    return { error: "Game hasn't started yet." };
+  }
 
   // Build engine state and seed history from the current games so
   // repeat-avoidance considers what's on court right now.

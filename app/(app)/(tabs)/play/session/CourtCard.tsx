@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, Button, CategoryBadge } from "@/components/ui";
 import { GameTimer } from "@/components/GameTimer";
 import { ClockIcon } from "@/components/icons";
-import { recordWinner } from "@/lib/data/liveSessionActions";
+import { recordWinner, startGame } from "@/lib/data/liveSessionActions";
 import type { Category } from "@/lib/categories";
-import type { TeamSide } from "@/types/database";
+import type { GameStatus, TeamSide } from "@/types/database";
 
 export type CourtTeam = {
   players: Array<{ id: string; name: string; category: Category }>;
@@ -16,6 +16,7 @@ export type CourtTeam = {
 export type CourtData = {
   court: number;
   gameId: string;
+  status: GameStatus;
   startedAt: string;
   teamA: CourtTeam;
   teamB: CourtTeam;
@@ -37,6 +38,7 @@ export function CourtCard({
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const isAwaitingStart = court.status === "pending";
 
   function pick(winner: TeamSide) {
     setError(null);
@@ -44,6 +46,14 @@ export function CourtCard({
       const res = await recordWinner(sessionId, court.court, winner);
       if (res?.error) setError(res.error);
       else setPicking(false);
+    });
+  }
+
+  function start() {
+    setError(null);
+    startTransition(async () => {
+      const res = await startGame(sessionId, court.court);
+      if (res?.error) setError(res.error);
     });
   }
 
@@ -55,7 +65,16 @@ export function CourtCard({
         </h3>
         <span className="flex items-center gap-1 text-ink/70">
           <ClockIcon size={15} />
-          <GameTimer startedAt={court.startedAt} />
+          {isAwaitingStart ? (
+            <span
+              className="font-heading text-sm font-semibold tabular-nums text-ink/70"
+              aria-label="Game time"
+            >
+              --:--
+            </span>
+          ) : (
+            <GameTimer startedAt={court.startedAt} />
+          )}
         </span>
       </div>
 
@@ -87,7 +106,24 @@ export function CourtCard({
       {canManage && (
         <div className="mt-3">
           <AnimatePresence mode="wait">
-            {picking ? (
+            {isAwaitingStart ? (
+              <motion.div
+                key="start"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  onClick={start}
+                  disabled={isPending}
+                >
+                  Start Game
+                </Button>
+              </motion.div>
+            ) : picking ? (
               <motion.div
                 key="picking"
                 initial={{ opacity: 0 }}
@@ -113,11 +149,12 @@ export function CourtCard({
                 exit={{ opacity: 0 }}
               >
                 <Button
-                  variant="glass"
+                  variant="accent"
+                  size="lg"
                   fullWidth
                   onClick={() => setPicking(true)}
                 >
-                  Game over
+                  Game Over
                 </Button>
               </motion.div>
             )}

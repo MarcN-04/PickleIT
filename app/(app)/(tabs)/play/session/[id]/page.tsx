@@ -55,6 +55,7 @@ export default async function LiveSessionPage({
       return {
         court: g.court_number,
         gameId: g.id,
+        status: g.status,
         startedAt: g.started_at,
         teamA: { players: team("a") },
         teamB: { players: team("b") },
