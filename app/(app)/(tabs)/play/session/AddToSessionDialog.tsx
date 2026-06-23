@@ -1,29 +1,41 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Button, CategoryBadge } from "@/components/ui";
-import { addPlayerToSession } from "@/lib/data/liveSessionActions";
-import type { Category } from "@/lib/categories";
-
-type Candidate = { id: string; name: string; category: Category };
+import {
+  addPlayerToSession,
+  getLateArrivalCandidates,
+  type LateArrivalCandidate as Candidate,
+} from "@/lib/data/liveSessionActions";
 
 /**
  * Drop a late arrival into the running session. Lists roster players not already
- * enrolled; tapping one enrolls them at the back of the queue.
+ * enrolled; tapping one enrolls them at the back of the queue. Candidates load
+ * on demand when the dialog opens, so the live page doesn't block its courts
+ * render on a roster query that's only needed here.
  */
-export function AddToSessionDialog({
-  sessionId,
-  candidates,
-}: {
-  sessionId: string;
-  candidates: Candidate[];
-}) {
+export function AddToSessionDialog({ sessionId }: { sessionId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [candidates, setCandidates] = useState<Candidate[] | null>(null);
+
+  // Fetch the roster the first time the dialog opens (and refetch each open so
+  // it reflects who's already in the session now).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setCandidates(null);
+    getLateArrivalCandidates(sessionId).then((list) => {
+      if (!cancelled) setCandidates(list);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, sessionId]);
 
   function add(playerId: string) {
     setError(null);
@@ -64,7 +76,9 @@ export function AddToSessionDialog({
                 Add a late arrival
               </h2>
 
-              {candidates.length === 0 ? (
+              {candidates === null ? (
+                <p className="py-6 text-center text-sm text-ink/70">Loading roster…</p>
+              ) : candidates.length === 0 ? (
                 <p className="py-6 text-center text-sm text-ink/70">
                   Everyone in the roster is already in this session.
                 </p>

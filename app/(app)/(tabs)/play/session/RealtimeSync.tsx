@@ -9,9 +9,13 @@ import { createClient } from "@/lib/supabase/client";
  * components when anything changes, so multiple phones viewing the same session
  * stay in sync. Renders nothing.
  *
- * We listen broadly (all rows on the three live tables) and filter by session
- * where the table carries session_id; game_players has no session_id, so any
- * change there triggers a refresh too (cheap — sessions are small).
+ * We listen to session_players and games, both filtered by session_id. We do
+ * NOT listen to game_players: it has no session_id column (an unfiltered
+ * listener would refresh THIS session on every game_players write in ANY
+ * session). Every game_players write here is always paired with a session-
+ * scoped games insert (insertGame) and session_players updates
+ * (persistSessionPlayers), so the two filtered listeners already cover every
+ * transition.
  */
 export function RealtimeSync({ sessionId }: { sessionId: string }) {
   const router = useRouter();
@@ -20,13 +24,16 @@ export function RealtimeSync({ sessionId }: { sessionId: string }) {
     const supabase = createClient();
     let scheduled = false;
     const refresh = () => {
-      // Debounce a burst of row events into a single refresh.
+      // Coalesce the burst of row events from a single action (a game over
+      // writes games + session_players together) into one refresh. Kept short
+      // so cross-device sync stays snappy; the acting device already updated
+      // optimistically and doesn't feel this at all.
       if (scheduled) return;
       scheduled = true;
       setTimeout(() => {
         scheduled = false;
         router.refresh();
-      }, 150);
+      }, 40);
     };
 
     const channel = supabase
@@ -49,11 +56,6 @@ export function RealtimeSync({ sessionId }: { sessionId: string }) {
           table: "games",
           filter: `session_id=eq.${sessionId}`,
         },
-        refresh
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "game_players" },
         refresh
       )
       .subscribe();

@@ -8,10 +8,11 @@ import {
   initializeSession,
   applyGameResult,
   type EngineState,
+  type EnginePlayer,
   type GameHistoryEntry,
 } from "@/lib/rotation";
-import { loadLiveSession, toEngineState } from "./liveSession";
-import type { TeamSide } from "@/types/database";
+import { loadLiveSession, toEngineState, groupGamePlayers } from "./liveSession";
+import type { PairingMode, TeamSide } from "@/types/database";
 
 type SupabaseClient = ReturnType<typeof createClient>;
 
@@ -97,9 +98,37 @@ async function insertGame(
 }
 
 /**
- * On first dashboard load (no in-progress games yet), run the engine's session
- * initializer and persist the initial courts + queue. Idempotent: if games
- * already exist, does nothing.
+ * Run the engine's session initializer and persist the initial courts + queue.
+ * Shared by `startSession` (the hot path, called right after enrollment so the
+ * first live-page build already has games) and the idempotent
+ * `ensureGamesStarted` fallback below. The `enginePlayers` map is supplied by
+ * the caller, which already has the roster in hand — no re-read needed.
+ *
+ * Games for each court are inserted concurrently (courts are independent); each
+ * insert keeps its own ordering (game row before its 4 game_players).
+ */
+export async function initializeCourts(
+  supabase: SupabaseClient,
+  sessionId: string,
+  courtCount: number,
+  pairingMode: PairingMode,
+  enginePlayers: Record<string, EnginePlayer>
+): Promise<void> {
+  const state = initializeSession(enginePlayers, courtCount, pairingMode);
+
+  await Promise.all(
+    state.games.map((g) =>
+      insertGame(supabase, sessionId, g.court, g.teamA, g.teamB)
+    )
+  );
+  await persistSessionPlayers(supabase, sessionId, state);
+}
+
+/**
+ * Idempotent fallback to initialize the courts of an active session that has no
+ * games yet (e.g. a session created before games were initialized, or one whose
+ * inline init failed). The hot path initializes inside `startSession`; this just
+ * recovers a games-less session. Does nothing if games already exist.
  */
 export async function ensureGamesStarted(sessionId: string): Promise<void> {
   const profile = await getCurrentProfile();
@@ -111,17 +140,13 @@ export async function ensureGamesStarted(sessionId: string): Promise<void> {
   if (live.games.length > 0) return; // already initialized
 
   const engineBefore = toEngineState(live);
-  const state = initializeSession(
-    engineBefore.players,
+  await initializeCourts(
+    supabase,
+    sessionId,
     live.session.court_count,
-    live.session.pairing_mode
+    live.session.pairing_mode,
+    engineBefore.players
   );
-
-  // Persist new games, then reconcile player states.
-  for (const g of state.games) {
-    await insertGame(supabase, sessionId, g.court, g.teamA, g.teamB);
-  }
-  await persistSessionPlayers(supabase, sessionId, state);
 
   revalidatePath(`/play/session/${sessionId}`);
 }
@@ -139,20 +164,23 @@ export async function startGame(
   }
 
   const supabase = createClient();
-  const live = await loadLiveSession(sessionId);
-  if (!live || live.session.status !== "active") {
-    return { error: "Session is not active." };
-  }
 
-  const dbGame = live.games.find(
-    (g) => g.court_number === court && g.status === "pending"
-  );
+  // Targeted lookup of the single pending game on this court — an index hit on
+  // the partial unique index games(session_id, court_number) WHERE status in
+  // ('pending','in_progress'). No need to load the whole live session.
+  const { data: dbGame } = await supabase
+    .from("games")
+    .select("id")
+    .eq("session_id", sessionId)
+    .eq("court_number", court)
+    .eq("status", "pending")
+    .maybeSingle();
   if (!dbGame) return { error: "No pending game on that court." };
 
   const { error } = await supabase
     .from("games")
     .update({ status: "in_progress", started_at: new Date().toISOString() })
-    .eq("id", dbGame.id);
+    .eq("id", (dbGame as { id: string }).id);
   if (error) return { error: error.message };
 
   revalidatePath(`/play/session/${sessionId}`);
@@ -186,12 +214,13 @@ export async function recordWinner(
   }
 
   // Build engine state and seed history from the current games so
-  // repeat-avoidance considers what's on court right now.
+  // repeat-avoidance considers what's on court right now. Pre-group game_players
+  // by game_id once (O(n)) instead of re-filtering per game (O(n²)).
   const state = toEngineState(live);
+  const gpByGame = groupGamePlayers(live.gamePlayers);
   const history: GameHistoryEntry[] = live.games.map((g) => {
-    const a = live.gamePlayers.filter((gp) => gp.game_id === g.id && gp.team === "a").map((gp) => gp.player_id);
-    const b = live.gamePlayers.filter((gp) => gp.game_id === g.id && gp.team === "b").map((gp) => gp.player_id);
-    return { teamA: [a[0], a[1]], teamB: [b[0], b[1]] };
+    const e = gpByGame.get(g.id) ?? { a: [], b: [] };
+    return { teamA: [e.a[0], e.a[1]], teamB: [e.b[0], e.b[1]] };
   });
   const seeded: EngineState = { ...state, history };
 
@@ -214,6 +243,46 @@ export async function recordWinner(
   await persistSessionPlayers(supabase, sessionId, next);
 
   revalidatePath(`/play/session/${sessionId}`);
+}
+
+export type LateArrivalCandidate = {
+  id: string;
+  name: string;
+  category: import("@/lib/categories").Category;
+};
+
+/**
+ * Roster players not currently active in this session — the candidates for a
+ * late arrival. Loaded on demand when the "Late arrival" dialog opens, so the
+ * live page never blocks its courts render on a full roster query.
+ */
+export async function getLateArrivalCandidates(
+  sessionId: string
+): Promise<LateArrivalCandidate[]> {
+  const profile = await getCurrentProfile();
+  if (!canManageGameplay(profile?.role)) return [];
+
+  const supabase = createClient();
+
+  // Active player ids in this session (anyone not 'left').
+  const { data: active } = await supabase
+    .from("session_players")
+    .select("player_id, state")
+    .eq("session_id", sessionId);
+  const activeIds = new Set(
+    (active ?? [])
+      .filter((sp) => (sp as { state: string }).state !== "left")
+      .map((sp) => (sp as { player_id: string }).player_id)
+  );
+
+  const { data: roster } = await supabase
+    .from("players")
+    .select("id, name, category")
+    .order("name");
+
+  return ((roster ?? []) as LateArrivalCandidate[]).filter(
+    (p) => !activeIds.has(p.id)
+  );
 }
 
 /**

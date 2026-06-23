@@ -26,23 +26,21 @@ export async function loadLiveSession(
 ): Promise<LiveSessionState | null> {
   const supabase = createClient();
 
-  const { data: session } = await supabase
-    .from("sessions")
-    .select("*")
-    .eq("id", sessionId)
-    .single();
+  // These three are independent — run them in one parallel wave. Only
+  // game_players depends on the resulting game ids, so it follows as wave two.
+  const [{ data: session }, { data: sps }, { data: games }] = await Promise.all([
+    supabase.from("sessions").select("*").eq("id", sessionId).single(),
+    supabase
+      .from("session_players")
+      .select("*, player:player_id (*)")
+      .eq("session_id", sessionId),
+    supabase
+      .from("games")
+      .select("*")
+      .eq("session_id", sessionId)
+      .in("status", ["pending", "in_progress"]),
+  ]);
   if (!session) return null;
-
-  const { data: sps } = await supabase
-    .from("session_players")
-    .select("*, player:player_id (*)")
-    .eq("session_id", sessionId);
-
-  const { data: games } = await supabase
-    .from("games")
-    .select("*")
-    .eq("session_id", sessionId)
-    .in("status", ["pending", "in_progress"]);
 
   const gameIds = (games ?? []).map((g) => (g as Game).id);
   let gamePlayers: GamePlayer[] = [];
@@ -61,6 +59,25 @@ export async function loadLiveSession(
     games: (games as Game[]) ?? [],
     gamePlayers,
   };
+}
+
+/**
+ * Group game_players by game_id into team rosters once, so callers can index by
+ * game_id in O(1) instead of re-filtering the whole array per game (O(n²)).
+ */
+export function groupGamePlayers(
+  gamePlayers: GamePlayer[]
+): Map<string, { a: string[]; b: string[] }> {
+  const byGame = new Map<string, { a: string[]; b: string[] }>();
+  for (const gp of gamePlayers) {
+    let entry = byGame.get(gp.game_id);
+    if (!entry) {
+      entry = { a: [], b: [] };
+      byGame.set(gp.game_id, entry);
+    }
+    (gp.team === "a" ? entry.a : entry.b).push(gp.player_id);
+  }
+  return byGame;
 }
 
 /**
@@ -91,17 +108,13 @@ export function toEngineState(live: LiveSessionState): EngineState {
     .sort((a, b) => (a.queue_position ?? 0) - (b.queue_position ?? 0))
     .map((sp) => sp.player_id);
 
+  const gpByGame = groupGamePlayers(live.gamePlayers);
   const games: EngineGame[] = live.games.map((g) => {
-    const teamA = live.gamePlayers
-      .filter((gp) => gp.game_id === g.id && gp.team === "a")
-      .map((gp) => gp.player_id);
-    const teamB = live.gamePlayers
-      .filter((gp) => gp.game_id === g.id && gp.team === "b")
-      .map((gp) => gp.player_id);
+    const e = gpByGame.get(g.id) ?? { a: [], b: [] };
     return {
       court: g.court_number,
-      teamA: [teamA[0], teamA[1]] as [string, string],
-      teamB: [teamB[0], teamB[1]] as [string, string],
+      teamA: [e.a[0], e.a[1]] as [string, string],
+      teamB: [e.b[0], e.b[1]] as [string, string],
     };
   });
 

@@ -12,7 +12,6 @@ import { MatchupRow } from "./MatchupRow";
 import { AddToSessionDialog } from "./AddToSessionDialog";
 
 export type QueuePlayer = { id: string; name: string; category: Category };
-type Candidate = { id: string; name: string; category: Category };
 
 /**
  * Live-session right sidebar — mirrors the SideNav / SessionSummaryPanel glass
@@ -24,13 +23,11 @@ export function SessionQueuePanel({
   sessionId,
   upNext,
   rest,
-  candidates,
   canManage,
 }: {
   sessionId: string;
   upNext: QueuePlayer[];
   rest: QueuePlayer[];
-  candidates: Candidate[];
   canManage: boolean;
 }) {
   const fullGroup = upNext.length === 4;
@@ -106,9 +103,7 @@ export function SessionQueuePanel({
             <h2 className="font-heading text-xs font-semibold uppercase tracking-wide text-ink/55">
               Waiting list
             </h2>
-            {canManage && (
-              <AddToSessionDialog sessionId={sessionId} candidates={candidates} />
-            )}
+            {canManage && <AddToSessionDialog sessionId={sessionId} />}
           </div>
 
           {rest.length === 0 ? (

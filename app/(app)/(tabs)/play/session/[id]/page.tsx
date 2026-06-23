@@ -6,8 +6,7 @@ import { CourtCard, type CourtData } from "../CourtCard";
 import { SessionQueuePanel, type QueuePlayer } from "../SessionQueuePanel";
 import { RealtimeSync } from "../RealtimeSync";
 import { AutoInit } from "../AutoInit";
-import { loadLiveSession } from "@/lib/data/liveSession";
-import { getPlayers } from "@/lib/data/players";
+import { loadLiveSession, groupGamePlayers } from "@/lib/data/liveSession";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { canManageGameplay } from "@/lib/auth/roles";
 import { type Category } from "@/lib/categories";
@@ -42,23 +41,24 @@ export default async function LiveSessionPage({
     session.pairing_mode === "balance" ? "Balance" : "King of the court";
   const dateTitle = DATE_FMT.format(new Date(session.created_at));
 
-  // Build court view models.
+  // Build court view models. Group game_players by game_id once (O(n)) rather
+  // than re-filtering the whole array per team per court.
   const playerById = new Map(sessionPlayers.map((sp) => [sp.player_id, sp.player]));
+  const gpByGame = groupGamePlayers(gamePlayers);
   const courts: CourtData[] = games
     .slice()
     .sort((a, b) => a.court_number - b.court_number)
     .map((g) => {
+      const roster = gpByGame.get(g.id) ?? { a: [], b: [] };
       const team = (side: "a" | "b") =>
-        gamePlayers
-          .filter((gp) => gp.game_id === g.id && gp.team === side)
-          .map((gp) => {
-            const p = playerById.get(gp.player_id);
-            return {
-              id: gp.player_id,
-              name: p?.name ?? "—",
-              category: (p?.category ?? "beginner") as Category,
-            };
-          });
+        roster[side].map((playerId) => {
+          const p = playerById.get(playerId);
+          return {
+            id: playerId,
+            name: p?.name ?? "—",
+            category: (p?.category ?? "beginner") as Category,
+          };
+        });
       return {
         court: g.court_number,
         gameId: g.id,
@@ -84,15 +84,6 @@ export default async function LiveSessionPage({
   const rest = waiting.slice(4);
 
   const needsInit = games.length === 0 && waiting.length >= 4;
-
-  // Candidates for late arrival = roster players not currently active here.
-  const activeIds = new Set(
-    sessionPlayers.filter((sp) => sp.state !== "left").map((sp) => sp.player_id)
-  );
-  const roster = canManage ? await getPlayers() : [];
-  const candidates = roster
-    .filter((p) => !activeIds.has(p.id))
-    .map((p) => ({ id: p.id, name: p.name, category: p.category }));
 
   return (
     <div className="lg:flex lg:h-[calc(100dvh-1.5rem)] lg:flex-col lg:overflow-hidden">
@@ -154,8 +145,11 @@ export default async function LiveSessionPage({
               // (see MatchupRow) instead of widening a card.
               <div className="grid grid-cols-[repeat(auto-fit,minmax(min(320px,100%),1fr))] items-stretch gap-4">
                 {courts.map((c) => (
+                  // Key by gameId (not court): when a game ends, the new pending
+                  // game on that court has a fresh id, so the card remounts and
+                  // any optimistic state resets to show the real next match.
                   <CourtCard
-                    key={c.court}
+                    key={c.gameId}
                     sessionId={session.id}
                     court={c}
                     canManage={canManage}
@@ -172,7 +166,6 @@ export default async function LiveSessionPage({
             sessionId={session.id}
             upNext={upNext}
             rest={rest}
-            candidates={candidates}
             canManage={canManage}
           />
         </div>

@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { canManageGameplay } from "@/lib/auth/roles";
+import { initializeCourts } from "./liveSessionActions";
+import type { EnginePlayer } from "@/lib/rotation";
+import type { Category } from "@/lib/categories";
 import type { PairingMode } from "@/types/database";
 
 export type StartSessionResult = { error: string } | undefined;
@@ -78,6 +81,32 @@ export async function startSession(formData: FormData): Promise<StartSessionResu
     // Roll back the session so we don't leave an empty active one behind.
     await supabase.from("sessions").delete().eq("id", sessionId);
     return { error: spErr.message };
+  }
+
+  // Initialize the courts inline (run the rotation engine + insert games) so the
+  // first live-page render already shows the courts — no AutoInit round-trip.
+  // We already have the player ids; fetch their categories once to build the
+  // engine snapshot (gamesPlayed: 0, seq from enrollment order).
+  const { data: roster } = await supabase
+    .from("players")
+    .select("id, category")
+    .in("id", playerIds);
+  const catById = new Map(
+    (roster ?? []).map((r) => [(r as { id: string }).id, (r as { category: Category }).category])
+  );
+  const enginePlayers: Record<string, EnginePlayer> = {};
+  playerIds.forEach((id, i) => {
+    const category = catById.get(id);
+    if (!category) return;
+    enginePlayers[id] = { id, category, gamesPlayed: 0, seq: i };
+  });
+
+  try {
+    await initializeCourts(supabase, sessionId, courtCount, pairingMode, enginePlayers);
+  } catch {
+    // If init fails, leave the session active with no games; the idempotent
+    // ensureGamesStarted fallback recovers it on the live page. (The unique
+    // index on games prevents duplicate courts on retry.)
   }
 
   revalidatePath("/play");
