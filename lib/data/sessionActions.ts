@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { canManageGameplay } from "@/lib/auth/roles";
-import { initializeCourts } from "./liveSessionActions";
+import { initializeCourts } from "./sessionInit";
 import type { EnginePlayer } from "@/lib/rotation";
 import type { Category } from "@/lib/categories";
 import type { PairingMode } from "@/types/database";

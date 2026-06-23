@@ -65,12 +65,11 @@ export function CourtCard({
     setOptimisticDone(true); // stop the timer + show "Loading next match…" now
     startTransition(async () => {
       const res = await recordWinner(sessionId, court.court, winner);
-      if (res?.error) {
-        setError(res.error);
-        setOptimisticDone(false); // revert on failure
-      } else {
-        setPicking(false);
-      }
+      // Declaring a winner is final: keep the timer stopped even on error (the
+      // stop is a UI state, not contingent on the server). The card reconciles
+      // on the next realtime refresh — it remounts with the new pending game.
+      if (res?.error) setError(res.error);
+      setPicking(false);
     });
   }
 

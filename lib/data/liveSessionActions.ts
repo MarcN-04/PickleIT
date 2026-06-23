@@ -5,124 +5,17 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/session";
 import { canManageGameplay } from "@/lib/auth/roles";
 import {
-  initializeSession,
   applyGameResult,
   type EngineState,
-  type EnginePlayer,
   type GameHistoryEntry,
 } from "@/lib/rotation";
 import { loadLiveSession, toEngineState, groupGamePlayers } from "./liveSession";
-import type { PairingMode, TeamSide } from "@/types/database";
-
-type SupabaseClient = ReturnType<typeof createClient>;
-
-/**
- * Reconcile an EngineState to the DB session_players rows: who is playing on
- * which court, who is waiting at which queue position, and their games_played.
- * (games / game_players are written separately by the callers.)
- */
-async function persistSessionPlayers(
-  supabase: SupabaseClient,
-  sessionId: string,
-  state: EngineState
-) {
-  // Map player_id -> { state, current_court } from the current games.
-  const onCourt = new Map<string, number>();
-  for (const g of state.games) {
-    for (const id of [...g.teamA, ...g.teamB]) onCourt.set(id, g.court);
-  }
-  const queuePos = new Map<string, number>();
-  state.queue.forEach((id, i) => queuePos.set(id, i));
-
-  // One update per player. (Small N — a handful of players per session.)
-  const updates = Object.values(state.players).map((p) => {
-    const court = onCourt.get(p.id);
-    if (court != null) {
-      return {
-        player_id: p.id,
-        state: "playing" as const,
-        current_court: court,
-        queue_position: null as number | null,
-        games_played: p.gamesPlayed,
-      };
-    }
-    return {
-      player_id: p.id,
-      state: "waiting" as const,
-      current_court: null as number | null,
-      queue_position: queuePos.get(p.id) ?? null,
-      games_played: p.gamesPlayed,
-    };
-  });
-
-  await Promise.all(
-    updates.map((u) =>
-      supabase
-        .from("session_players")
-        .update({
-          state: u.state,
-          current_court: u.current_court,
-          queue_position: u.queue_position,
-          games_played: u.games_played,
-        })
-        .eq("session_id", sessionId)
-        .eq("player_id", u.player_id)
-    )
-  );
-}
-
-/** Insert a fresh in-progress game + its 4 game_players rows. */
-async function insertGame(
-  supabase: SupabaseClient,
-  sessionId: string,
-  court: number,
-  teamA: [string, string],
-  teamB: [string, string]
-) {
-  const { data: game, error } = await supabase
-    .from("games")
-    .insert({ session_id: sessionId, court_number: court, status: "pending" })
-    .select("id")
-    .single();
-  if (error || !game) throw error ?? new Error("game insert failed");
-
-  const gameId = (game as { id: string }).id;
-  const rows = [
-    { game_id: gameId, player_id: teamA[0], team: "a" as const },
-    { game_id: gameId, player_id: teamA[1], team: "a" as const },
-    { game_id: gameId, player_id: teamB[0], team: "b" as const },
-    { game_id: gameId, player_id: teamB[1], team: "b" as const },
-  ];
-  const { error: gpErr } = await supabase.from("game_players").insert(rows);
-  if (gpErr) throw gpErr;
-}
-
-/**
- * Run the engine's session initializer and persist the initial courts + queue.
- * Shared by `startSession` (the hot path, called right after enrollment so the
- * first live-page build already has games) and the idempotent
- * `ensureGamesStarted` fallback below. The `enginePlayers` map is supplied by
- * the caller, which already has the roster in hand — no re-read needed.
- *
- * Games for each court are inserted concurrently (courts are independent); each
- * insert keeps its own ordering (game row before its 4 game_players).
- */
-export async function initializeCourts(
-  supabase: SupabaseClient,
-  sessionId: string,
-  courtCount: number,
-  pairingMode: PairingMode,
-  enginePlayers: Record<string, EnginePlayer>
-): Promise<void> {
-  const state = initializeSession(enginePlayers, courtCount, pairingMode);
-
-  await Promise.all(
-    state.games.map((g) =>
-      insertGame(supabase, sessionId, g.court, g.teamA, g.teamB)
-    )
-  );
-  await persistSessionPlayers(supabase, sessionId, state);
-}
+import {
+  initializeCourts,
+  insertGame,
+  persistSessionPlayers,
+} from "./sessionInit";
+import type { TeamSide } from "@/types/database";
 
 /**
  * Idempotent fallback to initialize the courts of an active session that has no
@@ -209,9 +102,12 @@ export async function recordWinner(
 
   const dbGame = live.games.find((g) => g.court_number === court);
   if (!dbGame) return { error: "No active game on that court." };
-  if (dbGame.status !== "in_progress") {
-    return { error: "Game hasn't started yet." };
-  }
+  // Note: we intentionally allow completing a game that's still "pending".
+  // Start is optimistic on the client, so a fast "Game Over" can arrive before
+  // the start write/refresh lands. Tapping a winner is a final intent, so we
+  // complete it regardless of status rather than reject — that rejection
+  // ("Game hasn't started yet.") was what made the client revert and the timer
+  // reappear.
 
   // Build engine state and seed history from the current games so
   // repeat-avoidance considers what's on court right now. Pre-group game_players
@@ -226,7 +122,10 @@ export async function recordWinner(
 
   const next = applyGameResult(seeded, { court, winner });
 
-  // 1) Complete the finished game.
+  // 1) Complete the finished game. We complete it regardless of whether it was
+  //    in_progress or still pending — see the note above; games.started_at is
+  //    NOT NULL (defaults to creation time) so no stamping is needed, and there
+  //    is no started_at < ended_at constraint to violate.
   const { error: cErr } = await supabase
     .from("games")
     .update({ status: "completed", winner, ended_at: new Date().toISOString() })

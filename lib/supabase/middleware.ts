@@ -38,6 +38,12 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: getUser() refreshes the token; do not run code between
   // createServerClient and getUser().
+  //
+  // This is the SINGLE per-request token validation (a networked Auth-server
+  // check). Because it runs before every route renders, downstream Server
+  // Components/actions (see getCurrentProfile) can read the session LOCALLY via
+  // getSession() instead of re-validating over the network — that local read is
+  // only safe because this call already validated the token here.
   const {
     data: { user },
   } = await supabase.auth.getUser();
