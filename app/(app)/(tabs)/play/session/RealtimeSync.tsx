@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { wasRecentLocalMutation } from "./localMutation";
 
 /**
  * Subscribes to live-state changes for a session and refreshes the server
@@ -20,6 +21,13 @@ export function RealtimeSync({ sessionId }: { sessionId: string }) {
     const supabase = createClient();
     let scheduled = false;
     const refresh = () => {
+      // Suppress the echo of a write this device JUST made: the action's own
+      // revalidatePath already refreshed our view, so the Realtime round-trip
+      // of the same change is redundant here. Genuine remote changes (from
+      // another device) never set this window on THIS device, so they still
+      // refresh — cross-device sync is preserved.
+      if (wasRecentLocalMutation()) return;
+
       // Debounce a burst of row events into a single refresh.
       if (scheduled) return;
       scheduled = true;
