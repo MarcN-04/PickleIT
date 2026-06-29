@@ -42,3 +42,6 @@ desktop.ini
 
 # Vercel
 .vercel
+
+# Agent worktrees (Orchestrator scratch checkouts — never commit)
+.worktrees/
