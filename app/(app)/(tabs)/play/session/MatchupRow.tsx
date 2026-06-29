@@ -3,6 +3,7 @@
 import { TierDot } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import type { Category } from "@/lib/categories";
+import type { TeamSide } from "@/types/database";
 
 export type MatchupPlayer = { id: string; name: string; category: Category };
 export type MatchupTeam = { players: MatchupPlayer[] };
@@ -18,6 +19,7 @@ export function MatchupRow({
   teamB,
   picking = false,
   disabled = false,
+  winner,
   onPickA,
   onPickB,
 }: {
@@ -25,12 +27,20 @@ export function MatchupRow({
   teamB: MatchupTeam;
   picking?: boolean;
   disabled?: boolean;
+  /** Highlight only the winning half (used for the optimistic "recording" state). */
+  winner?: TeamSide | null;
   onPickA?: () => void;
   onPickB?: () => void;
 }) {
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
-      <TeamHalf team={teamA} highlight={picking} onPick={onPickA} disabled={disabled} />
+      <TeamHalf
+        team={teamA}
+        highlight={picking || winner === "a"}
+        dim={winner === "b"}
+        onPick={onPickA}
+        disabled={disabled}
+      />
       <div className="flex items-center justify-center">
         <span className="rounded-full bg-white/70 px-2 py-0.5 font-heading text-[11px] font-bold text-ink/65">
           VS
@@ -38,7 +48,8 @@ export function MatchupRow({
       </div>
       <TeamHalf
         team={teamB}
-        highlight={picking}
+        highlight={picking || winner === "b"}
+        dim={winner === "a"}
         onPick={onPickB}
         disabled={disabled}
         alignRight
@@ -50,12 +61,14 @@ export function MatchupRow({
 function TeamHalf({
   team,
   highlight,
+  dim = false,
   onPick,
   disabled,
   alignRight = false,
 }: {
   team: MatchupTeam;
   highlight: boolean;
+  dim?: boolean;
   onPick?: () => void;
   disabled?: boolean;
   alignRight?: boolean;
@@ -64,10 +77,11 @@ function TeamHalf({
     <div
       className={cn(
         // w-full keeps both team boxes equal width; min-w-0 lets names truncate
-        "flex h-full w-full min-w-0 flex-col justify-center gap-1.5 rounded-glass p-2.5",
+        "flex h-full w-full min-w-0 flex-col justify-center gap-1.5 rounded-glass p-2.5 transition-opacity",
         highlight
           ? "border border-accent-to bg-gradient-to-br from-accent-from/20 to-accent-to/20"
           : "glass-inner",
+        dim && "opacity-50",
         alignRight ? "items-end text-right" : "items-start"
       )}
     >
