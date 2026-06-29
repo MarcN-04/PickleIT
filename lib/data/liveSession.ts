@@ -26,23 +26,24 @@ export async function loadLiveSession(
 ): Promise<LiveSessionState | null> {
   const supabase = createClient();
 
-  const { data: session } = await supabase
-    .from("sessions")
-    .select("*")
-    .eq("id", sessionId)
-    .single();
+  // These three queries are mutually independent — run them concurrently
+  // instead of awaiting each in turn. game_players depends on the game ids,
+  // so it stays a second hop below.
+  const [{ data: session }, { data: sps }, { data: games }] =
+    await Promise.all([
+      supabase.from("sessions").select("*").eq("id", sessionId).single(),
+      supabase
+        .from("session_players")
+        .select("*, player:player_id (*)")
+        .eq("session_id", sessionId),
+      supabase
+        .from("games")
+        .select("*")
+        .eq("session_id", sessionId)
+        .in("status", ["pending", "in_progress"]),
+    ]);
+
   if (!session) return null;
-
-  const { data: sps } = await supabase
-    .from("session_players")
-    .select("*, player:player_id (*)")
-    .eq("session_id", sessionId);
-
-  const { data: games } = await supabase
-    .from("games")
-    .select("*")
-    .eq("session_id", sessionId)
-    .in("status", ["pending", "in_progress"]);
 
   const gameIds = (games ?? []).map((g) => (g as Game).id);
   let gamePlayers: GamePlayer[] = [];

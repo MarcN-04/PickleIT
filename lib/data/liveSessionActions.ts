@@ -33,11 +33,16 @@ async function persistSessionPlayers(
   const queuePos = new Map<string, number>();
   state.queue.forEach((id, i) => queuePos.set(id, i));
 
-  // One update per player. (Small N — a handful of players per session.)
-  const updates = Object.values(state.players).map((p) => {
+  // Build one row per player. These rows always already exist (this function
+  // only reconciles enrolled players), so the upsert resolves to an UPDATE via
+  // the (session_id, player_id) unique constraint. session_id + player_id are
+  // included as the conflict key; the four reconciled columns carry the same
+  // values the per-player UPDATEs wrote before.
+  const rows = Object.values(state.players).map((p) => {
     const court = onCourt.get(p.id);
     if (court != null) {
       return {
+        session_id: sessionId,
         player_id: p.id,
         state: "playing" as const,
         current_court: court,
@@ -46,6 +51,7 @@ async function persistSessionPlayers(
       };
     }
     return {
+      session_id: sessionId,
       player_id: p.id,
       state: "waiting" as const,
       current_court: null as number | null,
@@ -54,20 +60,13 @@ async function persistSessionPlayers(
     };
   });
 
-  await Promise.all(
-    updates.map((u) =>
-      supabase
-        .from("session_players")
-        .update({
-          state: u.state,
-          current_court: u.current_court,
-          queue_position: u.queue_position,
-          games_played: u.games_played,
-        })
-        .eq("session_id", sessionId)
-        .eq("player_id", u.player_id)
-    )
-  );
+  if (rows.length === 0) return;
+
+  // Single round-trip: ON CONFLICT (session_id, player_id) DO UPDATE.
+  const { error } = await supabase
+    .from("session_players")
+    .upsert(rows, { onConflict: "session_id,player_id" });
+  if (error) throw error;
 }
 
 /** Insert a fresh in-progress game + its 4 game_players rows. */
